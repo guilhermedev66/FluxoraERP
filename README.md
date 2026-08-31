@@ -51,27 +51,36 @@ tests/
 web/                       # frontend React (em progresso)
 ```
 
-Regra de negócio vive no domínio (`Customer`, `Supplier`, agregados financeiros futuros), não em controllers.
+Regra de negócio vive no domínio (`Customer`, `Supplier`, `SalesOrder`, `PurchaseOrder`, `Receivable`, `Payable`), não em controllers.
 
 ## Status / Roadmap
 
 - ✅ **Milestone 0 — Discovery & Architecture**
-- 🚧 **Milestone 1 — Foundation**: solution .NET 10, PostgreSQL, Identity (roles Admin/Manager/Sales/Finance), clientes, fornecedores, auditoria append-only, Docker
-- ⏳ **Milestone 2 — Sales & Purchasing**
-- ⏳ **Milestone 3 — Finance** (idempotência, concorrência, testes adversariais)
+- ✅ **Milestone 1 — Foundation**: solution .NET 10, PostgreSQL, Identity (roles Admin/Manager/Sales/Finance), clientes, fornecedores, auditoria append-only, Docker
+- 🚧 **Milestone 2 — Sales & Purchasing**: catálogo, ciclo de vida de vendas/compras, geração inicial de contas a receber/pagar
+- ⏳ **Milestone 3 — Finance** (pagamentos/recebimentos com idempotência, concorrência, testes adversariais)
 - ⏳ **Milestone 4 — Reporting & Dashboard**
 - ⏳ **Milestone 5 — Automation & Data Exchange** (background jobs, CSV)
 - ⏳ **Milestone 6 — Production Readiness**
 
-## Funcionalidades em progresso (Milestone 1)
+## Funcionalidades em progresso
 
+**Milestone 1 — Foundation**
 - [x] Autenticação JWT (`POST /api/auth/login`, `GET /api/auth/me`)
 - [x] Roles seed: `Admin`, `Manager`, `Sales`, `Finance`
 - [x] Clientes: CRUD + ativar/desativar, documento único
 - [x] Fornecedores: CRUD + ativar/desativar, documento único
 - [x] Auditoria append-only (`AuditEntries`, bloqueado a nível de banco contra `UPDATE`/`DELETE`)
-- [x] Testes: unitários (domínio) + integração (Testcontainers, API real)
 - [x] Docker (API) + docker-compose (API + PostgreSQL)
+
+**Milestone 2 — Sales & Purchasing**
+- [x] Catálogo de produtos (`Products`, SKU único)
+- [x] Vendas: `Draft → Approved → Cancelled`, linhas travadas após aprovação
+- [x] Compras: `Draft → Confirmed → Cancelled`, preço de custo explícito por linha
+- [x] Aprovar uma venda gera uma `Receivable` (contas a receber) na mesma transação; confirmar uma compra gera uma `Payable`
+- [x] Parcelamento com distribuição exata em centavos (última parcela absorve o resto de arredondamento)
+- [x] Endpoints de leitura para contas a receber/pagar geradas (`GET /api/receivables`, `GET /api/payables`)
+- [ ] Aplicação de pagamento/recebimento contra as parcelas — Milestone 3 (idempotência + concorrência)
 
 ## Como executar
 
@@ -111,6 +120,8 @@ API disponível em `http://localhost:8080`.
 dotnet test tests/Fluxora.UnitTests           # não precisa de Docker
 dotnet test tests/Fluxora.IntegrationTests    # precisa de Docker (Testcontainers)
 ```
+
+39 testes unitários (domínio: Customer/Supplier/SalesOrder/PurchaseOrder/Receivable, parcelamento) e testes de integração cobrindo autenticação, CRUD, e o fluxo completo "venda aprovada gera conta a receber com parcelas corretas" contra a API real via Testcontainers.
 
 ## Licença
 
