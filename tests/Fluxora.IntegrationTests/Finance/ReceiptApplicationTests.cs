@@ -86,6 +86,34 @@ public class ReceiptApplicationTests(FluxoraApiFactory factory) : IClassFixture<
     }
 
     [Fact]
+    public async Task ApplyReceipt_TwoConcurrentRequestsWithSameKey_ReplayExactResponse()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var receivable = await CreateReceivableWithOneInstallmentAsync(client, total: 200m);
+        var installment = receivable.Installments[0];
+        var idempotencyKey = $"same-race-{Guid.NewGuid():N}";
+
+        var task1 = client.SendAsync(BuildReceiptRequest(
+            receivable.Id, installment.Id, 80m, installment.Version, idempotencyKey));
+        var task2 = client.SendAsync(BuildReceiptRequest(
+            receivable.Id, installment.Id, 80m, installment.Version, idempotencyKey));
+
+        var responses = await Task.WhenAll(task1, task2);
+        Assert.All(responses, response => Assert.Equal(HttpStatusCode.Created, response.StatusCode));
+
+        var receipts = await Task.WhenAll(responses.Select(response =>
+            response.Content.ReadFromJsonAsync<ReceiptDto>()));
+        Assert.Equal(receipts[0]!.Id, receipts[1]!.Id);
+        Assert.Equal(receipts[0], receipts[1]);
+
+        var refreshed = await (await client.GetAsync($"/api/receivables/{receivable.Id}"))
+            .Content.ReadFromJsonAsync<ReceivableDto>();
+        var refreshedInstallment = refreshed!.Installments.Single(i => i.Id == installment.Id);
+        Assert.Equal(80m, refreshedInstallment.AmountPaid);
+        Assert.Equal(installment.Version + 1, refreshedInstallment.Version);
+    }
+
+    [Fact]
     public async Task ApplyReceipt_TwoTrulyConcurrentReceipts_OnlyOneSucceeds()
     {
         var client = await CreateAuthenticatedClientAsync();

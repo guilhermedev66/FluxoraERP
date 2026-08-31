@@ -38,6 +38,9 @@ public class PaymentService(
 
         var requestHash = RequestHasher.Hash(new { payableId, installmentId, Amount = amount, request.ExpectedVersion });
 
+        await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
+        await idempotencyStore.AcquireLockAsync(Operation, idempotencyKey, cancellationToken);
+
         var existing = await idempotencyStore.FindAsync(Operation, idempotencyKey, cancellationToken);
         if (existing is not null)
         {
@@ -47,7 +50,9 @@ public class PaymentService(
                     "This Idempotency-Key was already used with a different request payload.");
             }
 
-            return JsonSerializer.Deserialize<PaymentDto>(existing.ResponseBody)!;
+            var replay = JsonSerializer.Deserialize<PaymentDto>(existing.ResponseBody)!;
+            await transaction.CommitAsync(cancellationToken);
+            return replay;
         }
 
         var payable = await payableRepository.GetByIdAsync(payableId, cancellationToken)
@@ -91,6 +96,7 @@ public class PaymentService(
         idempotencyStore.Stage(Operation, idempotencyKey, requestHash, responseStatus: 201, JsonSerializer.Serialize(dto));
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         return dto;
     }
 

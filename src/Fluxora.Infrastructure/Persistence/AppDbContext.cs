@@ -10,6 +10,7 @@ using Fluxora.Infrastructure.Identity;
 using Fluxora.Infrastructure.Persistence.Configurations;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Fluxora.Infrastructure.Persistence;
 
@@ -75,6 +76,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     /// ConcurrencyConflictException, so every caller (any entity with an IsConcurrencyToken)
     /// gets the same 409 behavior without depending on EF Core types itself.
     /// </summary>
+    async Task<IUnitOfWorkTransaction> IUnitOfWork.BeginTransactionAsync(CancellationToken cancellationToken)
+    {
+        var transaction = await Database.BeginTransactionAsync(cancellationToken);
+        return new EfUnitOfWorkTransaction(transaction);
+    }
+
     async Task IUnitOfWork.SaveChangesAsync(CancellationToken cancellationToken)
     {
         try
@@ -86,5 +93,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             throw new ConcurrencyConflictException(
                 "The record was modified by another request since it was loaded. Reload and try again.");
         }
+    }
+
+
+    private sealed class EfUnitOfWorkTransaction(IDbContextTransaction transaction) : IUnitOfWorkTransaction
+    {
+        public Task CommitAsync(CancellationToken cancellationToken = default) =>
+            transaction.CommitAsync(cancellationToken);
+
+        public ValueTask DisposeAsync() => transaction.DisposeAsync();
     }
 }

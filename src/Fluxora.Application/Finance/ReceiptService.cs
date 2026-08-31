@@ -38,6 +38,9 @@ public class ReceiptService(
 
         var requestHash = RequestHasher.Hash(new { receivableId, installmentId, Amount = amount, request.ExpectedVersion });
 
+        await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
+        await idempotencyStore.AcquireLockAsync(Operation, idempotencyKey, cancellationToken);
+
         var existing = await idempotencyStore.FindAsync(Operation, idempotencyKey, cancellationToken);
         if (existing is not null)
         {
@@ -47,7 +50,9 @@ public class ReceiptService(
                     "This Idempotency-Key was already used with a different request payload.");
             }
 
-            return JsonSerializer.Deserialize<ReceiptDto>(existing.ResponseBody)!;
+            var replay = JsonSerializer.Deserialize<ReceiptDto>(existing.ResponseBody)!;
+            await transaction.CommitAsync(cancellationToken);
+            return replay;
         }
 
         var receivable = await receivableRepository.GetByIdAsync(receivableId, cancellationToken)
@@ -91,6 +96,7 @@ public class ReceiptService(
         idempotencyStore.Stage(Operation, idempotencyKey, requestHash, responseStatus: 201, JsonSerializer.Serialize(dto));
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         return dto;
     }
 

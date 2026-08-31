@@ -109,6 +109,34 @@ public class PaymentApplicationTests(FluxoraApiFactory factory) : IClassFixture<
     }
 
     [Fact]
+    public async Task ApplyPayment_TwoConcurrentRequestsWithSameKey_ReplayExactResponse()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var payable = await CreatePayableWithOneInstallmentAsync(client, total: 200m);
+        var installment = payable.Installments[0];
+        var idempotencyKey = $"same-race-{Guid.NewGuid():N}";
+
+        var task1 = client.SendAsync(BuildPaymentRequest(
+            payable.Id, installment.Id, 80m, installment.Version, idempotencyKey));
+        var task2 = client.SendAsync(BuildPaymentRequest(
+            payable.Id, installment.Id, 80m, installment.Version, idempotencyKey));
+
+        var responses = await Task.WhenAll(task1, task2);
+        Assert.All(responses, response => Assert.Equal(HttpStatusCode.Created, response.StatusCode));
+
+        var payments = await Task.WhenAll(responses.Select(response =>
+            response.Content.ReadFromJsonAsync<PaymentDto>()));
+        Assert.Equal(payments[0]!.Id, payments[1]!.Id);
+        Assert.Equal(payments[0], payments[1]);
+
+        var refreshed = await (await client.GetAsync($"/api/payables/{payable.Id}"))
+            .Content.ReadFromJsonAsync<PayableDto>();
+        var refreshedInstallment = refreshed!.Installments.Single(i => i.Id == installment.Id);
+        Assert.Equal(80m, refreshedInstallment.AmountPaid);
+        Assert.Equal(installment.Version + 1, refreshedInstallment.Version);
+    }
+
+    [Fact]
     public async Task ApplyPayment_SameIdempotencyKeyDifferentPayload_ReturnsConflict()
     {
         var client = await CreateAuthenticatedClientAsync();
