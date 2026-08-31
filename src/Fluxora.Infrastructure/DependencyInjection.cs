@@ -11,6 +11,7 @@ using Fluxora.Infrastructure.Identity;
 using Fluxora.Infrastructure.Idempotency;
 using Fluxora.Infrastructure.Persistence;
 using Fluxora.Infrastructure.Persistence.Repositories;
+using Fluxora.Infrastructure.Time;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -63,6 +64,9 @@ public static class DependencyInjection
         services.AddScoped<PurchaseOrderService>();
 
         services.AddSingleton(TimeProvider.System);
+        services.AddSingleton<IBusinessClock>(sp => new BusinessClock(
+            sp.GetRequiredService<TimeProvider>(),
+            configuration["Business:TimeZone"] ?? "America/Sao_Paulo"));
         services.AddScoped<IReportingRepository, ReportingRepository>();
         services.AddScoped<ReportingService>();
 

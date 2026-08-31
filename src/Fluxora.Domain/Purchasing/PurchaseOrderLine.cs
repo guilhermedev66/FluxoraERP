@@ -14,7 +14,7 @@ public class PurchaseOrderLine
 
     public decimal UnitPrice { get; private set; }
 
-    public decimal LineTotal => decimal.Round(Quantity * UnitPrice, 2, MidpointRounding.AwayFromZero);
+    public decimal LineTotal { get; private set; }
 
     internal PurchaseOrderLine(Guid purchaseOrderId, Guid productId, string productName, decimal quantity, decimal unitPrice)
     {
@@ -33,6 +33,7 @@ public class PurchaseOrderLine
         ProductName = productName;
         Quantity = quantity;
         UnitPrice = unitPrice;
+        LineTotal = decimal.Round(quantity * unitPrice, 2, MidpointRounding.AwayFromZero);
     }
 
     private PurchaseOrderLine()

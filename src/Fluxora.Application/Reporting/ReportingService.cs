@@ -1,6 +1,8 @@
+using Fluxora.Application.Common;
+
 namespace Fluxora.Application.Reporting;
 
-public class ReportingService(IReportingRepository repository, TimeProvider timeProvider)
+public class ReportingService(IReportingRepository repository, IBusinessClock businessClock)
 {
     public Task<IReadOnlyList<PeriodAmountDto>> GetRevenueByMonthAsync(DateOnly? from, DateOnly? to, CancellationToken cancellationToken = default) =>
         repository.GetRevenueByMonthAsync(from, to, cancellationToken);
@@ -24,17 +26,17 @@ public class ReportingService(IReportingRepository repository, TimeProvider time
     }
 
     public Task<OverdueSummaryDto> GetOverdueSummaryAsync(CancellationToken cancellationToken = default) =>
-        repository.GetOverdueSummaryAsync(Today(), cancellationToken);
+        repository.GetOverdueSummaryAsync(businessClock.Today, cancellationToken);
 
     public Task<IReadOnlyList<DueBucketDto>> GetUpcomingDueAsync(int days, CancellationToken cancellationToken = default) =>
-        repository.GetUpcomingDueAsync(Today(), days, cancellationToken);
+        repository.GetUpcomingDueAsync(businessClock.Today, days, cancellationToken);
 
     public Task<IReadOnlyList<CashFlowPeriodDto>> GetCashFlowAsync(
         DateOnly? from, DateOnly? to, bool groupByDay, CancellationToken cancellationToken = default) =>
         repository.GetCashFlowAsync(from, to, groupByDay, cancellationToken);
 
     public Task<IReadOnlyList<ProjectedCashFlowPeriodDto>> GetProjectedCashFlowAsync(int days, CancellationToken cancellationToken = default) =>
-        repository.GetProjectedCashFlowAsync(Today(), days, cancellationToken);
+        repository.GetProjectedCashFlowAsync(businessClock.Today, days, cancellationToken);
 
     public Task<IReadOnlyList<TopCustomerDto>> GetTopCustomersAsync(
         DateOnly? from, DateOnly? to, int limit, CancellationToken cancellationToken = default) =>
@@ -46,7 +48,7 @@ public class ReportingService(IReportingRepository repository, TimeProvider time
 
     public async Task<DashboardSummaryDto> GetDashboardSummaryAsync(CancellationToken cancellationToken = default)
     {
-        var today = Today();
+        var today = businessClock.Today;
         var monthStart = new DateOnly(today.Year, today.Month, 1);
 
         var balance = await repository.GetCurrentBalanceAsync(cancellationToken);
@@ -75,6 +77,4 @@ public class ReportingService(IReportingRepository repository, TimeProvider time
             DueNext30DaysCount: (upcoming?.ReceivablesCount ?? 0) + (upcoming?.PayablesCount ?? 0),
             DueNext30DaysAmount: (upcoming?.ReceivablesAmount ?? 0) + (upcoming?.PayablesAmount ?? 0));
     }
-
-    private DateOnly Today() => DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
 }

@@ -30,6 +30,7 @@ public class FluxoraApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("Bootstrap:AdminEmail", AdminEmail);
         builder.UseSetting("Bootstrap:AdminPassword", AdminPassword);
         builder.UseSetting("Database:ApplyMigrations", "true");
+        builder.UseSetting("Business:TimeZone", "America/Sao_Paulo");
     }
 
     public async Task InitializeAsync()

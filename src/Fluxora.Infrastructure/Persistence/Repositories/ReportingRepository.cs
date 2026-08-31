@@ -1,3 +1,4 @@
+using Fluxora.Application.Common;
 using Fluxora.Application.Reporting;
 using Fluxora.Domain.Finance;
 using Fluxora.Domain.Purchasing;
@@ -6,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fluxora.Infrastructure.Persistence.Repositories;
 
-public class ReportingRepository(AppDbContext dbContext) : IReportingRepository
+public class ReportingRepository(AppDbContext dbContext, IBusinessClock businessClock) : IReportingRepository
 {
     public async Task<IReadOnlyList<PeriodAmountDto>> GetRevenueByMonthAsync(
         DateOnly? from, DateOnly? to, CancellationToken cancellationToken = default)
@@ -45,16 +46,22 @@ public class ReportingRepository(AppDbContext dbContext) : IReportingRepository
     public async Task<OverdueSummaryDto> GetOverdueSummaryAsync(DateOnly asOf, CancellationToken cancellationToken = default)
     {
         var receivables = await dbContext.ReceivableInstallments.AsNoTracking()
-            .Where(i => i.Status == InstallmentStatus.Pending && i.DueDate < asOf)
-            .Select(i => i.Amount - i.AmountPaid)
-            .ToListAsync(cancellationToken);
+            .Where(i => (i.Status == InstallmentStatus.Pending || i.Status == InstallmentStatus.Overdue) && i.DueDate < asOf)
+            .GroupBy(_ => 1)
+            .Select(g => new { Count = g.Count(), Amount = g.Sum(i => i.Amount - i.AmountPaid) })
+            .FirstOrDefaultAsync(cancellationToken);
 
         var payables = await dbContext.PayableInstallments.AsNoTracking()
-            .Where(i => i.Status == InstallmentStatus.Pending && i.DueDate < asOf)
-            .Select(i => i.Amount - i.AmountPaid)
-            .ToListAsync(cancellationToken);
+            .Where(i => (i.Status == InstallmentStatus.Pending || i.Status == InstallmentStatus.Overdue) && i.DueDate < asOf)
+            .GroupBy(_ => 1)
+            .Select(g => new { Count = g.Count(), Amount = g.Sum(i => i.Amount - i.AmountPaid) })
+            .FirstOrDefaultAsync(cancellationToken);
 
-        return new OverdueSummaryDto(receivables.Count, receivables.Sum(), payables.Count, payables.Sum());
+        return new OverdueSummaryDto(
+            receivables?.Count ?? 0,
+            receivables?.Amount ?? 0m,
+            payables?.Count ?? 0,
+            payables?.Amount ?? 0m);
     }
 
     public async Task<IReadOnlyList<DueBucketDto>> GetUpcomingDueAsync(DateOnly asOf, int days, CancellationToken cancellationToken = default)
@@ -62,25 +69,29 @@ public class ReportingRepository(AppDbContext dbContext) : IReportingRepository
         var horizon = asOf.AddDays(days);
 
         var receivables = await dbContext.ReceivableInstallments.AsNoTracking()
-            .Where(i => i.Status == InstallmentStatus.Pending && i.DueDate <= horizon)
-            .Select(i => new { i.DueDate, Remaining = i.Amount - i.AmountPaid })
+            .Where(i => (i.Status == InstallmentStatus.Pending || i.Status == InstallmentStatus.Overdue) && i.DueDate <= horizon)
+            .GroupBy(i => i.DueDate < asOf ? "Overdue" : i.DueDate == asOf ? "DueToday" : "Upcoming")
+            .Select(g => new { Bucket = g.Key, Count = g.Count(), Amount = g.Sum(i => i.Amount - i.AmountPaid) })
             .ToListAsync(cancellationToken);
 
         var payables = await dbContext.PayableInstallments.AsNoTracking()
-            .Where(i => i.Status == InstallmentStatus.Pending && i.DueDate <= horizon)
-            .Select(i => new { i.DueDate, Remaining = i.Amount - i.AmountPaid })
+            .Where(i => (i.Status == InstallmentStatus.Pending || i.Status == InstallmentStatus.Overdue) && i.DueDate <= horizon)
+            .GroupBy(i => i.DueDate < asOf ? "Overdue" : i.DueDate == asOf ? "DueToday" : "Upcoming")
+            .Select(g => new { Bucket = g.Key, Count = g.Count(), Amount = g.Sum(i => i.Amount - i.AmountPaid) })
             .ToListAsync(cancellationToken);
 
-        DueBucketDto Bucket(string name, Func<DateOnly, bool> predicate) => new(
+        DueBucketDto Bucket(string name) => new(
             name,
-            receivables.Count(r => predicate(r.DueDate)), receivables.Where(r => predicate(r.DueDate)).Sum(r => r.Remaining),
-            payables.Count(p => predicate(p.DueDate)), payables.Where(p => predicate(p.DueDate)).Sum(p => p.Remaining));
+            receivables.FirstOrDefault(r => r.Bucket == name)?.Count ?? 0,
+            receivables.FirstOrDefault(r => r.Bucket == name)?.Amount ?? 0m,
+            payables.FirstOrDefault(p => p.Bucket == name)?.Count ?? 0,
+            payables.FirstOrDefault(p => p.Bucket == name)?.Amount ?? 0m);
 
         return
         [
-            Bucket("Overdue", d => d < asOf),
-            Bucket("DueToday", d => d == asOf),
-            Bucket("Upcoming", d => d > asOf && d <= horizon),
+            Bucket("Overdue"),
+            Bucket("DueToday"),
+            Bucket("Upcoming"),
         ];
     }
 
@@ -147,13 +158,13 @@ public class ReportingRepository(AppDbContext dbContext) : IReportingRepository
         var horizon = asOf.AddDays(days);
 
         var receivables = await dbContext.ReceivableInstallments.AsNoTracking()
-            .Where(i => i.Status == InstallmentStatus.Pending && i.DueDate >= asOf && i.DueDate <= horizon)
+            .Where(i => (i.Status == InstallmentStatus.Pending || i.Status == InstallmentStatus.Overdue) && i.DueDate >= asOf && i.DueDate <= horizon)
             .GroupBy(i => new { i.DueDate.Year, i.DueDate.Month })
             .Select(g => new { g.Key.Year, g.Key.Month, Amount = g.Sum(i => i.Amount - i.AmountPaid) })
             .ToListAsync(cancellationToken);
 
         var payables = await dbContext.PayableInstallments.AsNoTracking()
-            .Where(i => i.Status == InstallmentStatus.Pending && i.DueDate >= asOf && i.DueDate <= horizon)
+            .Where(i => (i.Status == InstallmentStatus.Pending || i.Status == InstallmentStatus.Overdue) && i.DueDate >= asOf && i.DueDate <= horizon)
             .GroupBy(i => new { i.DueDate.Year, i.DueDate.Month })
             .Select(g => new { g.Key.Year, g.Key.Month, Amount = g.Sum(i => i.Amount - i.AmountPaid) })
             .ToListAsync(cancellationToken);
@@ -205,7 +216,7 @@ public class ReportingRepository(AppDbContext dbContext) : IReportingRepository
             .Where(l => confirmedOrderIds.Contains(l.PurchaseOrderId))
             .Join(dbContext.Products.AsNoTracking(), l => l.ProductId, p => p.Id, (l, p) => new { Line = l, Product = p })
             .GroupBy(x => x.Product.Category ?? "Sem categoria")
-            .Select(g => new { Category = g.Key, Amount = g.Sum(x => x.Line.Quantity * x.Line.UnitPrice) })
+            .Select(g => new { Category = g.Key, Amount = g.Sum(x => x.Line.LineTotal) })
             .OrderByDescending(g => g.Amount)
             .ToListAsync(cancellationToken);
 
@@ -225,10 +236,10 @@ public class ReportingRepository(AppDbContext dbContext) : IReportingRepository
         return inflow - outflow;
     }
 
-    private static (DateTime? FromUtc, DateTime? ToUtc) ToRangeUtc(DateOnly? from, DateOnly? to) =>
+    private (DateTime? FromUtc, DateTime? ToUtc) ToRangeUtc(DateOnly? from, DateOnly? to) =>
     (
-        from?.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
-        to?.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc)
+        from is null ? null : businessClock.StartOfDayUtc(from.Value),
+        to is null ? null : businessClock.StartOfDayUtc(to.Value.AddDays(1))
     );
 
     private static string FormatPeriod(int year, int month) => $"{year:D4}-{month:D2}";

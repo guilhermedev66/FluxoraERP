@@ -16,6 +16,6 @@ public class PurchaseOrderLineConfiguration : IEntityTypeConfiguration<PurchaseO
         builder.Property(l => l.ProductName).IsRequired().HasMaxLength(200);
         builder.Property(l => l.Quantity).HasPrecision(19, 4);
         builder.Property(l => l.UnitPrice).HasPrecision(19, 4);
-        builder.Ignore(l => l.LineTotal);
+        builder.Property(l => l.LineTotal).HasPrecision(19, 2);
     }
 }
