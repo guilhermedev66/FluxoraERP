@@ -1,0 +1,94 @@
+/* Must come first: Tailwind's own @import expands to real rules (not just @layer
+   statements), so any @import placed after it is invalid CSS per spec and can get
+   silently dropped by the browser. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import 'tailwindcss';
+@import './styles/tokens.css';
+
+/* Tailwind v4 CSS-first theme config — maps utility classes to the semantic tokens above. */
+@theme inline {
+  --color-background: var(--color-background);
+  --color-surface: var(--color-surface);
+  --color-surface-muted: var(--color-surface-muted);
+  --color-border: var(--color-border);
+
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-text-muted: var(--color-text-muted);
+
+  --color-accent: var(--color-accent);
+  --color-accent-foreground: var(--color-accent-foreground);
+
+  --color-success: var(--color-success);
+  --color-success-bg: var(--color-success-bg);
+  --color-success-border: var(--color-success-border);
+
+  --color-warning: var(--color-warning);
+  --color-warning-bg: var(--color-warning-bg);
+  --color-warning-border: var(--color-warning-border);
+
+  --color-danger: var(--color-danger);
+  --color-danger-bg: var(--color-danger-bg);
+  --color-danger-border: var(--color-danger-border);
+
+  --color-neutral: var(--color-neutral);
+  --color-neutral-bg: var(--color-neutral-bg);
+  --color-neutral-border: var(--color-neutral-border);
+
+  --radius-DEFAULT: var(--radius-base);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-background);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Financial values must always render with tabular (monospaced-width) digits so decimals align. */
+  .tabular-nums,
+  table td {
+    font-variant-numeric: tabular-nums;
+  }
+
+  *:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-focus-ring);
+  }
+}
+
+@layer components {
+  /* Raw text input primitive — used directly for simple forms; module forms with heavier
+     needs (currency, select, date) get dedicated shared/ui components as they're built. */
+  .input {
+    height: 2.25rem;
+    width: 100%;
+    border-radius: var(--radius-base);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    padding: 0 0.75rem;
+    font-size: 0.875rem;
+    color: var(--color-text-primary);
+  }
+
+  .input:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-focus-ring);
+  }
+}
