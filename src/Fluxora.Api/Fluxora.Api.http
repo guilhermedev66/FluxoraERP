@@ -1,0 +1,6 @@
+@Fluxora.Api_HostAddress = http://localhost:5001
+
+GET {{Fluxora.Api_HostAddress}}/health
+Accept: application/json
+
+###

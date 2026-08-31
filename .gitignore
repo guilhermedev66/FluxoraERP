@@ -1,0 +1,40 @@
+# Build outputs
+**/bin/
+**/obj/
+artifacts/
+TestResults/
+coverage/
+*.trx
+
+# IDE and user-specific files
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+secrets.json
+appsettings.Local.json
+**/appsettings.Local.json
+**/Properties/serviceDependencies*.json
+**/Properties/launchSettings.local.json
+
+# Certificates and keys
+*.pfx
+*.p12
+*.pem
+*.key
+
+# Tool and OS noise
+.DS_Store
+Thumbs.db
+*.log
+
+# Local agent workspace
+.claude/
