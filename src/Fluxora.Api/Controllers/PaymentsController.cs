@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Fluxora.Api.Controllers;
 
 [ApiController]
-[Authorize]
+[Authorize(Policy = AppPolicies.FinanceAccess)]
 [Route("api/payables/{payableId:guid}/installments/{installmentId:guid}/payments")]
 public class PaymentsController(PaymentService paymentService) : ControllerBase
 {

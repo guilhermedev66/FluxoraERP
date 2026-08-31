@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Fluxora.Api.Controllers;
 
 [ApiController]
-[Authorize]
+[Authorize(Policy = AppPolicies.FinanceAccess)]
 [Route("api/receivables/{receivableId:guid}/installments/{installmentId:guid}/receipts")]
 public class ReceiptsController(ReceiptService receiptService) : ControllerBase
 {

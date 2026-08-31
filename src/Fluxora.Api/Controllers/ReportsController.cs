@@ -1,3 +1,4 @@
+using Fluxora.Application.Common;
 using Fluxora.Application.Reporting;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +10,7 @@ namespace Fluxora.Api.Controllers;
 /// never by loading full entity graphs and summing in C#.
 /// </summary>
 [ApiController]
-[Authorize]
+[Authorize(Policy = AppPolicies.ReportingAccess)]
 [Route("api/reports")]
 public class ReportsController(ReportingService reportingService) : ControllerBase
 {

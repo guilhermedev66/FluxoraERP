@@ -11,7 +11,7 @@ namespace Fluxora.Api.Controllers;
 /// plus the cash movement ledger they produce.
 /// </summary>
 [ApiController]
-[Authorize]
+[Authorize(Policy = AppPolicies.FinanceAccess)]
 [Route("api")]
 public class FinanceController(FinanceQueryService financeQueryService) : ControllerBase
 {

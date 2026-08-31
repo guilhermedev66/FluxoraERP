@@ -35,7 +35,15 @@ builder.Services
         };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy(AppPolicies.FinanceAccess, policy =>
+        policy.RequireRole(AppRoles.Admin, AppRoles.Manager, AppRoles.Finance))
+    .AddPolicy(AppPolicies.ReportingAccess, policy =>
+        policy.RequireRole(AppRoles.Admin, AppRoles.Manager, AppRoles.Finance))
+    .AddPolicy(AppPolicies.DataExchangeManage, policy =>
+        policy.RequireRole(AppRoles.Admin, AppRoles.Manager))
+    .AddPolicy(AppPolicies.AutomationManage, policy =>
+        policy.RequireRole(AppRoles.Admin, AppRoles.Manager));
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
