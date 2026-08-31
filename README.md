@@ -58,8 +58,8 @@ Regra de negócio vive no domínio (`Customer`, `Supplier`, `SalesOrder`, `Purch
 - ✅ **Milestone 0 — Discovery & Architecture**
 - ✅ **Milestone 1 — Foundation**: solution .NET 10, PostgreSQL, Identity (roles Admin/Manager/Sales/Finance), clientes, fornecedores, auditoria append-only, Docker
 - ✅ **Milestone 2 — Sales & Purchasing**: catálogo, ciclo de vida de vendas/compras, geração inicial de contas a receber/pagar
-- 🚧 **Milestone 3 — Finance**: pagamentos/recebimentos com idempotência, concorrência e testes adversariais (fluxo de caixa)
-- ⏳ **Milestone 4 — Reporting & Dashboard**
+- ⚠️ **Milestone 3 — Finance**: implementação concluída, revisão adversarial independente pendente antes de considerar definitivamente encerrado (pagamentos/recebimentos com idempotência, concorrência, fluxo de caixa)
+- 🚧 **Milestone 4 — Reporting & Dashboard**
 - ⏳ **Milestone 5 — Automation & Data Exchange** (background jobs, CSV)
 - ⏳ **Milestone 6 — Production Readiness**
 
