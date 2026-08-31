@@ -8,7 +8,13 @@ public class PayableInstallmentConfiguration : IEntityTypeConfiguration<PayableI
 {
     public void Configure(EntityTypeBuilder<PayableInstallment> builder)
     {
-        builder.ToTable("PayableInstallments");
+        builder.ToTable("PayableInstallments", table =>
+        {
+            table.HasCheckConstraint("CK_PayableInstallments_Amount_Positive", "\"Amount\" > 0");
+            table.HasCheckConstraint(
+                "CK_PayableInstallments_AmountPaid_Range",
+                "\"AmountPaid\" >= 0 AND \"AmountPaid\" <= \"Amount\"");
+        });
 
         builder.HasKey(i => i.Id);
 

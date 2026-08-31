@@ -6,23 +6,30 @@ namespace Fluxora.Domain.Common;
 /// </summary>
 public static class InstallmentSplitter
 {
+    public const int MaximumInstallmentCount = 360;
+
     public static IReadOnlyList<decimal> Split(decimal total, int installmentCount)
     {
-        if (total <= 0)
+        var roundedTotal = decimal.Round(total, 2, MidpointRounding.AwayFromZero);
+        MoneyRules.RequirePositiveCents(roundedTotal, nameof(total), "Total");
+
+        if (installmentCount is < 1 or > MaximumInstallmentCount)
         {
-            throw new ArgumentOutOfRangeException(nameof(total), "Total must be positive.");
+            throw new ArgumentOutOfRangeException(
+                nameof(installmentCount),
+                $"Installment count must be between 1 and {MaximumInstallmentCount}.");
         }
 
-        if (installmentCount < 1)
+        var totalCents = roundedTotal * 100m;
+        if (installmentCount > totalCents)
         {
-            throw new ArgumentOutOfRangeException(nameof(installmentCount), "Installment count must be at least 1.");
+            throw new ArgumentOutOfRangeException(
+                nameof(installmentCount),
+                "Installment count cannot exceed the number of whole cents in the total.");
         }
 
-        var totalCents = decimal.Round(total, 2, MidpointRounding.AwayFromZero) * 100m;
-        var totalCentsLong = (long)totalCents;
-
-        var baseCents = totalCentsLong / installmentCount;
-        var remainderCents = totalCentsLong % installmentCount;
+        var baseCents = decimal.Truncate(totalCents / installmentCount);
+        var remainderCents = totalCents - (baseCents * installmentCount);
 
         var amounts = new List<decimal>(installmentCount);
         for (var i = 0; i < installmentCount; i++)

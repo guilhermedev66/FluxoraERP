@@ -8,7 +8,13 @@ public class ReceivableInstallmentConfiguration : IEntityTypeConfiguration<Recei
 {
     public void Configure(EntityTypeBuilder<ReceivableInstallment> builder)
     {
-        builder.ToTable("ReceivableInstallments");
+        builder.ToTable("ReceivableInstallments", table =>
+        {
+            table.HasCheckConstraint("CK_ReceivableInstallments_Amount_Positive", "\"Amount\" > 0");
+            table.HasCheckConstraint(
+                "CK_ReceivableInstallments_AmountPaid_Range",
+                "\"AmountPaid\" >= 0 AND \"AmountPaid\" <= \"Amount\"");
+        });
 
         builder.HasKey(i => i.Id);
 

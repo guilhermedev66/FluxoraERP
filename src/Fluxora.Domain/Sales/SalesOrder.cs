@@ -60,10 +60,7 @@ public class SalesOrder : BaseEntity
 
     public void Cancel()
     {
-        if (Status == SalesOrderStatus.Cancelled)
-        {
-            throw new InvalidOperationException("The sales order is already cancelled.");
-        }
+        EnsureDraft("cancel");
 
         Status = SalesOrderStatus.Cancelled;
         Version++;

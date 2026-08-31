@@ -1,3 +1,5 @@
+using Fluxora.Domain.Common;
+
 namespace Fluxora.Domain.Finance;
 
 /// <summary>
@@ -25,10 +27,7 @@ public class ReceivableInstallment
 
     internal ReceivableInstallment(Guid receivableId, int number, DateOnly dueDate, decimal amount)
     {
-        if (amount <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(amount), "Installment amount must be positive.");
-        }
+        MoneyRules.RequirePositiveCents(amount, nameof(amount), "Installment amount");
 
         ReceivableId = receivableId;
         Number = number;
@@ -52,10 +51,7 @@ public class ReceivableInstallment
             throw new InvalidOperationException($"Cannot apply a receipt to an installment with status '{Status}'.");
         }
 
-        if (amount <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(amount), "Receipt amount must be positive.");
-        }
+        MoneyRules.RequirePositiveCents(amount, nameof(amount), "Receipt amount");
 
         if (amount > RemainingAmount)
         {

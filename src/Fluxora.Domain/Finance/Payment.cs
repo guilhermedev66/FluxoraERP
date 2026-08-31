@@ -1,3 +1,5 @@
+using Fluxora.Domain.Common;
+
 namespace Fluxora.Domain.Finance;
 
 /// <summary>
@@ -30,10 +32,7 @@ public class Payment
 
     public static Payment Create(Guid payableId, Guid payableInstallmentId, decimal amount, Guid? createdByUserId)
     {
-        if (amount <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(amount), "Payment amount must be positive.");
-        }
+        MoneyRules.RequirePositiveCents(amount, nameof(amount), "Payment amount");
 
         return new Payment(payableId, payableInstallmentId, amount, createdByUserId);
     }

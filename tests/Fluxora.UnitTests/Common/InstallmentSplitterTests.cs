@@ -47,6 +47,29 @@ public class InstallmentSplitterTests
         Assert.Throws<ArgumentOutOfRangeException>(() => InstallmentSplitter.Split(100m, 0));
     }
 
+    [Fact]
+    public void Split_MoreInstallmentsThanCents_ThrowsInsteadOfCreatingZeroValueInstallments()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => InstallmentSplitter.Split(0.02m, 3));
+    }
+
+    [Fact]
+    public void Split_AboveMaximumInstallmentCount_Throws()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            InstallmentSplitter.Split(1000m, InstallmentSplitter.MaximumInstallmentCount + 1));
+    }
+
+    [Fact]
+    public void Split_VeryLargeDecimal_DoesNotOverflowLong()
+    {
+        var total = 99_999_999_999_999_999.99m;
+
+        var amounts = InstallmentSplitter.Split(total, 3);
+
+        Assert.Equal(total, amounts.Sum());
+    }
+
     [Theory]
     [InlineData(10.00, 1)]
     [InlineData(10.01, 3)]

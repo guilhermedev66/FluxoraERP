@@ -107,4 +107,23 @@ public class ReceiptApplicationTests(FluxoraApiFactory factory) : IClassFixture<
         Assert.Equal(70m, refreshedInstallment.AmountPaid);
         Assert.Equal(installment.Version + 1, refreshedInstallment.Version);
     }
+
+    [Fact]
+    public async Task ApplyReceipt_WithFractionalCent_ReturnsBadRequestWithoutChangingInstallment()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var receivable = await CreateReceivableWithOneInstallmentAsync(client, total: 100m);
+        var installment = receivable.Installments[0];
+
+        var response = await client.SendAsync(BuildReceiptRequest(
+            receivable.Id, installment.Id, 0.004m, installment.Version, $"key-{Guid.NewGuid():N}"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var refreshed = await (await client.GetAsync($"/api/receivables/{receivable.Id}"))
+            .Content.ReadFromJsonAsync<ReceivableDto>();
+        var refreshedInstallment = refreshed!.Installments.Single(i => i.Id == installment.Id);
+        Assert.Equal(0m, refreshedInstallment.AmountPaid);
+        Assert.Equal(installment.Version, refreshedInstallment.Version);
+    }
 }

@@ -60,10 +60,7 @@ public class PurchaseOrder : BaseEntity
 
     public void Cancel()
     {
-        if (Status == PurchaseOrderStatus.Cancelled)
-        {
-            throw new InvalidOperationException("The purchase order is already cancelled.");
-        }
+        EnsureDraft("cancel");
 
         Status = PurchaseOrderStatus.Cancelled;
         Version++;

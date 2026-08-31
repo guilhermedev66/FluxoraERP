@@ -154,6 +154,27 @@ public class PaymentApplicationTests(FluxoraApiFactory factory) : IClassFixture<
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 
+    [Theory]
+    [InlineData(0.004)]
+    [InlineData(9.999)]
+    public async Task ApplyPayment_WithFractionalCent_ReturnsBadRequestWithoutChangingInstallment(decimal amount)
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var payable = await CreatePayableWithOneInstallmentAsync(client, total: 100m);
+        var installment = payable.Installments[0];
+
+        var response = await client.SendAsync(BuildPaymentRequest(
+            payable.Id, installment.Id, amount, installment.Version, $"key-{Guid.NewGuid():N}"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var refreshed = await (await client.GetAsync($"/api/payables/{payable.Id}"))
+            .Content.ReadFromJsonAsync<PayableDto>();
+        var refreshedInstallment = refreshed!.Installments.Single(i => i.Id == installment.Id);
+        Assert.Equal(0m, refreshedInstallment.AmountPaid);
+        Assert.Equal(installment.Version, refreshedInstallment.Version);
+    }
+
     [Fact]
     public async Task ApplyPayment_TwoTrulyConcurrentRequests_OnlyOneSucceeds()
     {

@@ -1,3 +1,5 @@
+using Fluxora.Domain.Common;
+
 namespace Fluxora.Domain.Finance;
 
 /// <summary>
@@ -30,10 +32,7 @@ public class Receipt
 
     public static Receipt Create(Guid receivableId, Guid receivableInstallmentId, decimal amount, Guid? createdByUserId)
     {
-        if (amount <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(amount), "Receipt amount must be positive.");
-        }
+        MoneyRules.RequirePositiveCents(amount, nameof(amount), "Receipt amount");
 
         return new Receipt(receivableId, receivableInstallmentId, amount, createdByUserId);
     }

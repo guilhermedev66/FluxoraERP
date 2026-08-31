@@ -88,6 +88,16 @@ public class SalesOrderTests
         Assert.Throws<InvalidOperationException>(order.Cancel);
     }
 
+    [Fact]
+    public void Cancel_AfterApproval_ThrowsToPreserveGeneratedReceivable()
+    {
+        var order = SalesOrder.CreateDraft(Guid.NewGuid(), Guid.NewGuid());
+        order.AddLine(Guid.NewGuid(), "Widget", 1, 10m);
+        order.Approve();
+
+        Assert.Throws<InvalidOperationException>(order.Cancel);
+    }
+
     [Theory]
     [InlineData(0, 10)]
     [InlineData(-1, 10)]

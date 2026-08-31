@@ -30,14 +30,13 @@ public class Payable : BaseEntity
     public static Payable Create(
         Guid purchaseOrderId, Guid supplierId, decimal totalAmount, int installmentCount, DateOnly firstDueDate, int intervalDays)
     {
-        if (totalAmount <= 0)
+        if (intervalDays is < 1 or > 3660)
         {
-            throw new ArgumentOutOfRangeException(nameof(totalAmount), "Payable total must be positive.");
+            throw new ArgumentOutOfRangeException(nameof(intervalDays), "Installment interval must be between 1 and 3660 days.");
         }
 
-        var payable = new Payable(purchaseOrderId, supplierId, totalAmount);
-
         var amounts = InstallmentSplitter.Split(totalAmount, installmentCount);
+        var payable = new Payable(purchaseOrderId, supplierId, amounts.Sum());
         for (var i = 0; i < amounts.Count; i++)
         {
             var dueDate = firstDueDate.AddDays(i * intervalDays);

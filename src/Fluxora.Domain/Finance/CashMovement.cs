@@ -1,3 +1,5 @@
+using Fluxora.Domain.Common;
+
 namespace Fluxora.Domain.Finance;
 
 /// <summary>
@@ -34,10 +36,7 @@ public class CashMovement
 
     public static CashMovement For(CashMovementDirection direction, decimal amount, string referenceType, Guid referenceId)
     {
-        if (amount <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(amount), "Cash movement amount must be positive.");
-        }
+        MoneyRules.RequirePositiveCents(amount, nameof(amount), "Cash movement amount");
 
         return new CashMovement(direction, amount, referenceType, referenceId);
     }

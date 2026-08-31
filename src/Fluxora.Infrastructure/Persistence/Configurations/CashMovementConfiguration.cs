@@ -8,7 +8,8 @@ public class CashMovementConfiguration : IEntityTypeConfiguration<CashMovement>
 {
     public void Configure(EntityTypeBuilder<CashMovement> builder)
     {
-        builder.ToTable("CashMovements");
+        builder.ToTable("CashMovements", table =>
+            table.HasCheckConstraint("CK_CashMovements_Amount_Positive", "\"Amount\" > 0"));
 
         builder.HasKey(c => c.Id);
 
@@ -17,6 +18,6 @@ public class CashMovementConfiguration : IEntityTypeConfiguration<CashMovement>
         builder.Property(c => c.ReferenceType).IsRequired().HasMaxLength(50);
 
         builder.HasIndex(c => c.OccurredAtUtc);
-        builder.HasIndex(c => new { c.ReferenceType, c.ReferenceId });
+        builder.HasIndex(c => new { c.ReferenceType, c.ReferenceId }).IsUnique();
     }
 }

@@ -1,3 +1,5 @@
+using Fluxora.Domain.Common;
+
 namespace Fluxora.Domain.Finance;
 
 public class PayableInstallment
@@ -20,10 +22,7 @@ public class PayableInstallment
 
     internal PayableInstallment(Guid payableId, int number, DateOnly dueDate, decimal amount)
     {
-        if (amount <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(amount), "Installment amount must be positive.");
-        }
+        MoneyRules.RequirePositiveCents(amount, nameof(amount), "Installment amount");
 
         PayableId = payableId;
         Number = number;
@@ -47,10 +46,7 @@ public class PayableInstallment
             throw new InvalidOperationException($"Cannot apply a payment to an installment with status '{Status}'.");
         }
 
-        if (amount <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(amount), "Payment amount must be positive.");
-        }
+        MoneyRules.RequirePositiveCents(amount, nameof(amount), "Payment amount");
 
         if (amount > RemainingAmount)
         {

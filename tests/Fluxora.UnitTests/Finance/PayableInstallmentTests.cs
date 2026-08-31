@@ -78,6 +78,20 @@ public class PayableInstallmentTests
         Assert.Throws<ArgumentOutOfRangeException>(() => installment.ApplyPayment(amount));
     }
 
+    [Theory]
+    [InlineData(0.004)]
+    [InlineData(9.999)]
+    public void ApplyPayment_FractionalCent_ThrowsWithoutChangingState(decimal amount)
+    {
+        var installment = NewPayable().Installments[0];
+        var versionBefore = installment.Version;
+
+        Assert.Throws<ArgumentException>(() => installment.ApplyPayment(amount));
+
+        Assert.Equal(0m, installment.AmountPaid);
+        Assert.Equal(versionBefore, installment.Version);
+    }
+
     [Fact]
     public void FindInstallment_UnknownId_ReturnsNull()
     {

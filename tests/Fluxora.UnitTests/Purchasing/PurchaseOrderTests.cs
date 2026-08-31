@@ -45,4 +45,14 @@ public class PurchaseOrderTests
 
         Assert.Throws<InvalidOperationException>(order.Cancel);
     }
+
+    [Fact]
+    public void Cancel_AfterConfirmation_ThrowsToPreserveGeneratedPayable()
+    {
+        var order = PurchaseOrder.CreateDraft(Guid.NewGuid(), Guid.NewGuid());
+        order.AddLine(Guid.NewGuid(), "Raw Material", 1, 10m);
+        order.Confirm();
+
+        Assert.Throws<InvalidOperationException>(order.Cancel);
+    }
 }

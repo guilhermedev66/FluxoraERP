@@ -8,7 +8,8 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
 {
     public void Configure(EntityTypeBuilder<Payment> builder)
     {
-        builder.ToTable("Payments");
+        builder.ToTable("Payments", table =>
+            table.HasCheckConstraint("CK_Payments_Amount_Positive", "\"Amount\" > 0"));
 
         builder.HasKey(p => p.Id);
 
@@ -16,5 +17,15 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
 
         builder.HasIndex(p => p.PayableId);
         builder.HasIndex(p => p.PayableInstallmentId);
+
+        builder.HasOne<Payable>()
+            .WithMany()
+            .HasForeignKey(p => p.PayableId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<PayableInstallment>()
+            .WithMany()
+            .HasForeignKey(p => p.PayableInstallmentId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
