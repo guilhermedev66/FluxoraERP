@@ -57,8 +57,8 @@ Regra de negócio vive no domínio (`Customer`, `Supplier`, `SalesOrder`, `Purch
 
 - ✅ **Milestone 0 — Discovery & Architecture**
 - ✅ **Milestone 1 — Foundation**: solution .NET 10, PostgreSQL, Identity (roles Admin/Manager/Sales/Finance), clientes, fornecedores, auditoria append-only, Docker
-- 🚧 **Milestone 2 — Sales & Purchasing**: catálogo, ciclo de vida de vendas/compras, geração inicial de contas a receber/pagar
-- ⏳ **Milestone 3 — Finance** (pagamentos/recebimentos com idempotência, concorrência, testes adversariais)
+- ✅ **Milestone 2 — Sales & Purchasing**: catálogo, ciclo de vida de vendas/compras, geração inicial de contas a receber/pagar
+- 🚧 **Milestone 3 — Finance**: pagamentos/recebimentos com idempotência, concorrência e testes adversariais (fluxo de caixa)
 - ⏳ **Milestone 4 — Reporting & Dashboard**
 - ⏳ **Milestone 5 — Automation & Data Exchange** (background jobs, CSV)
 - ⏳ **Milestone 6 — Production Readiness**
@@ -80,7 +80,15 @@ Regra de negócio vive no domínio (`Customer`, `Supplier`, `SalesOrder`, `Purch
 - [x] Aprovar uma venda gera uma `Receivable` (contas a receber) na mesma transação; confirmar uma compra gera uma `Payable`
 - [x] Parcelamento com distribuição exata em centavos (última parcela absorve o resto de arredondamento)
 - [x] Endpoints de leitura para contas a receber/pagar geradas (`GET /api/receivables`, `GET /api/payables`)
-- [ ] Aplicação de pagamento/recebimento contra as parcelas — Milestone 3 (idempotência + concorrência)
+
+**Milestone 3 — Finance**
+- [x] `POST /api/payables/{id}/installments/{id}/payments` e `POST /api/receivables/{id}/installments/{id}/receipts`
+- [x] Idempotência real: header `Idempotency-Key` obrigatório, replay exato para a mesma chave+payload, `409` para chave reutilizada com payload diferente
+- [x] Concorrência real: campo `Version` como concurrency token do EF Core — comparação explícita na aplicação + `DbUpdateConcurrencyException` do EF traduzido para `409`, provado com um teste de duas requisições HTTP genuinamente paralelas (`Task.WhenAll`) contra a mesma parcela
+- [x] Pagamento/recebimento parcial e integral, rejeição de valor acima do saldo restante, parcela `Paid` não aceita novo lançamento
+- [x] `CashMovement` (fluxo de caixa) gerado na mesma transação de cada pagamento/recebimento
+- [x] Auditoria (`PaymentApplied`, `ReceiptApplied`)
+- [ ] Relatórios de fluxo de caixa/DRE — Milestone 4
 
 ## Como executar
 
@@ -121,7 +129,7 @@ dotnet test tests/Fluxora.UnitTests           # não precisa de Docker
 dotnet test tests/Fluxora.IntegrationTests    # precisa de Docker (Testcontainers)
 ```
 
-39 testes unitários (domínio: Customer/Supplier/SalesOrder/PurchaseOrder/Receivable, parcelamento) e testes de integração cobrindo autenticação, CRUD, e o fluxo completo "venda aprovada gera conta a receber com parcelas corretas" contra a API real via Testcontainers.
+51 testes unitários (domínio: Customer/Supplier/SalesOrder/PurchaseOrder/Receivable/Payable, parcelamento, regras de pagamento/recebimento) e testes de integração cobrindo autenticação, CRUD, o fluxo "venda aprovada gera conta a receber com parcelas corretas", idempotência (replay exato, conflito de chave reutilizada) e concorrência real (duas requisições HTTP paralelas contra a mesma parcela — só uma pode ganhar) contra a API real via Testcontainers.
 
 ## Licença
 
