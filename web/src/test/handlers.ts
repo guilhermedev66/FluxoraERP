@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw'
 import type { PartyDto } from '@/shared/api/partyResource'
+import type { DashboardSummaryDto } from '@/modules/dashboard/api/types'
 
 export const mockClientes: PartyDto[] = [
   {
@@ -13,6 +14,22 @@ export const mockClientes: PartyDto[] = [
   },
 ]
 
+export const mockDashboardSummary: DashboardSummaryDto = {
+  currentBalance: 142850.2,
+  monthRevenue: 84320,
+  monthExpenses: 51180.4,
+  monthNet: 33139.6,
+  overdueReceivablesCount: 2,
+  overdueReceivablesAmount: 3200,
+  overduePayablesCount: 1,
+  overduePayablesAmount: 1050,
+  dueTodayCount: 2,
+  dueTodayAmount: 1820,
+  dueNext30DaysCount: 18,
+  dueNext30DaysAmount: 38450,
+}
+
 export const handlers = [
   http.get('*/api/customers', () => HttpResponse.json(mockClientes)),
+  http.get('*/api/reports/dashboard-summary', () => HttpResponse.json(mockDashboardSummary)),
 ]
