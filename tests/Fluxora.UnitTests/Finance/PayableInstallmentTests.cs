@@ -93,6 +93,30 @@ public class PayableInstallmentTests
     }
 
     [Fact]
+    public void MarkOverdue_DueTodayOrLater_DoesNotChangeStatus()
+    {
+        var today = new DateOnly(2026, 9, 1);
+        var installment = Payable.Create(
+            Guid.NewGuid(), Guid.NewGuid(), 100m, 1, today, 30).Installments[0];
+
+        Assert.False(installment.MarkOverdue(today));
+        Assert.Equal(InstallmentStatus.Pending, installment.Status);
+        Assert.Equal(1, installment.Version);
+    }
+
+    [Fact]
+    public void MarkOverdue_ExecutedTwice_ChangesStateOnlyOnce()
+    {
+        var installment = Payable.Create(
+            Guid.NewGuid(), Guid.NewGuid(), 100m, 1, new DateOnly(2026, 8, 31), 30).Installments[0];
+
+        Assert.True(installment.MarkOverdue(new DateOnly(2026, 9, 1)));
+        Assert.False(installment.MarkOverdue(new DateOnly(2026, 9, 1)));
+        Assert.Equal(InstallmentStatus.Overdue, installment.Status);
+        Assert.Equal(2, installment.Version);
+    }
+
+    [Fact]
     public void FindInstallment_UnknownId_ReturnsNull()
     {
         var payable = NewPayable();

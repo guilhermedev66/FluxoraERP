@@ -15,6 +15,7 @@ public class FinanceAuthorizationTests(FluxoraApiFactory factory) : IClassFixtur
     [InlineData("/api/receivables")]
     [InlineData("/api/cash-movements")]
     [InlineData("/api/reports/dashboard-summary")]
+    [InlineData("/api/automation/dashboard-snapshots")]
     public async Task SalesRole_CannotAccessFinanceOrReporting(string path)
     {
         var client = await CreateClientForRoleAsync(AppRoles.Sales);

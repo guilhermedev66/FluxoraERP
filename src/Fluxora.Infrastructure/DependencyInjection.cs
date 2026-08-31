@@ -1,3 +1,4 @@
+using Fluxora.Application.Automation;
 using Fluxora.Application.Catalog;
 using Fluxora.Application.Common;
 using Fluxora.Application.Customers;
@@ -6,6 +7,7 @@ using Fluxora.Application.Purchasing;
 using Fluxora.Application.Reporting;
 using Fluxora.Application.Sales;
 using Fluxora.Application.Suppliers;
+using Fluxora.Infrastructure.Automation;
 using Fluxora.Infrastructure.Auditing;
 using Fluxora.Infrastructure.Identity;
 using Fluxora.Infrastructure.Idempotency;
@@ -16,6 +18,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Quartz;
 
 namespace Fluxora.Infrastructure;
 
@@ -69,6 +72,47 @@ public static class DependencyInjection
             configuration["Business:TimeZone"] ?? "America/Sao_Paulo"));
         services.AddScoped<IReportingRepository, ReportingRepository>();
         services.AddScoped<ReportingService>();
+
+        services.AddScoped<IOverdueRepository, OverdueRepository>();
+        services.AddScoped<OverdueProcessingService>();
+        services.AddScoped<IDashboardSnapshotRepository, DashboardSnapshotRepository>();
+        services.AddScoped<DashboardSnapshotService>();
+
+        var businessTimeZone = TimeZoneInfo.FindSystemTimeZoneById(
+            configuration["Business:TimeZone"] ?? "America/Sao_Paulo");
+
+        services.AddQuartz(quartz =>
+        {
+            quartz.SchedulerId = "AUTO";
+            quartz.SchedulerName = "Fluxora Automation";
+            quartz.UseDefaultThreadPool(options => options.MaxConcurrency = 2);
+            quartz.UsePersistentStore(store =>
+            {
+                store.UseProperties = true;
+                store.UsePostgres(connectionString);
+                store.UseSystemTextJsonSerializer();
+                store.UseClustering();
+            });
+
+            var overdueJob = new JobKey("overdue-processing", "automation");
+            quartz.AddJob<OverdueProcessingJob>(options => options.WithIdentity(overdueJob).StoreDurably());
+            quartz.AddTrigger(options => options
+                .WithIdentity("overdue-processing-daily", "automation")
+                .ForJob(overdueJob)
+                .WithCronSchedule(configuration["Automation:OverdueCron"] ?? "0 5 0 * * ?", schedule => schedule
+                    .InTimeZone(businessTimeZone)
+                    .WithMisfireHandlingInstructionFireAndProceed()));
+
+            var snapshotJob = new JobKey("dashboard-snapshot", "automation");
+            quartz.AddJob<DashboardSnapshotJob>(options => options.WithIdentity(snapshotJob).StoreDurably());
+            quartz.AddTrigger(options => options
+                .WithIdentity("dashboard-snapshot-daily", "automation")
+                .ForJob(snapshotJob)
+                .WithCronSchedule(configuration["Automation:DashboardSnapshotCron"] ?? "0 15 0 * * ?", schedule => schedule
+                    .InTimeZone(businessTimeZone)
+                    .WithMisfireHandlingInstructionFireAndProceed()));
+        });
+        services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
 
         return services;
     }

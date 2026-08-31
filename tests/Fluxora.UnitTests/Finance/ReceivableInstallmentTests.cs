@@ -54,6 +54,17 @@ public class ReceivableInstallmentTests
     }
 
     [Fact]
+    public void MarkOverdue_DueYesterday_ChangesStatusAndVersion()
+    {
+        var installment = Receivable.Create(
+            Guid.NewGuid(), Guid.NewGuid(), 100m, 1, new DateOnly(2026, 8, 31), 30).Installments[0];
+
+        Assert.True(installment.MarkOverdue(new DateOnly(2026, 9, 1)));
+        Assert.Equal(InstallmentStatus.Overdue, installment.Status);
+        Assert.Equal(2, installment.Version);
+    }
+
+    [Fact]
     public void FindInstallment_UnknownId_ReturnsNull()
     {
         var receivable = NewReceivable();

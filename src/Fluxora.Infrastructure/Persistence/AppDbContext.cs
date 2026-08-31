@@ -4,6 +4,7 @@ using Fluxora.Domain.Catalog;
 using Fluxora.Domain.Customers;
 using Fluxora.Domain.Finance;
 using Fluxora.Domain.Purchasing;
+using Fluxora.Domain.Reporting;
 using Fluxora.Domain.Sales;
 using Fluxora.Domain.Suppliers;
 using Fluxora.Infrastructure.Identity;
@@ -49,6 +50,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<Idempotency.IdempotencyRecord> IdempotencyRecords => Set<Idempotency.IdempotencyRecord>();
 
+    public DbSet<DashboardSnapshot> DashboardSnapshots => Set<DashboardSnapshot>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -69,6 +72,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
         builder.ApplyConfiguration(new ReceiptConfiguration());
         builder.ApplyConfiguration(new CashMovementConfiguration());
         builder.ApplyConfiguration(new Configurations.IdempotencyRecordConfiguration());
+        builder.ApplyConfiguration(new DashboardSnapshotConfiguration());
     }
 
     /// <summary>

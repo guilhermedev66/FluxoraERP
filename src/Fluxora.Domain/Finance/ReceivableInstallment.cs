@@ -39,6 +39,18 @@ public class ReceivableInstallment
 
     public decimal RemainingAmount => decimal.Round(Amount - AmountPaid, 2, MidpointRounding.AwayFromZero);
 
+    public bool MarkOverdue(DateOnly asOf)
+    {
+        if (Status != InstallmentStatus.Pending || DueDate >= asOf)
+        {
+            return false;
+        }
+
+        Status = InstallmentStatus.Overdue;
+        Version++;
+        return true;
+    }
+
     /// <summary>
     /// Applies a receipt amount. The caller (application layer) is responsible for the
     /// expected-Version pre-check; this always increments Version so EF's own optimistic
