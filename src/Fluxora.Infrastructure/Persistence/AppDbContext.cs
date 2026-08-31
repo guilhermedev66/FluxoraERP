@@ -30,7 +30,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<Receivable> Receivables => Set<Receivable>();
 
+    public DbSet<ReceivableInstallment> ReceivableInstallments => Set<ReceivableInstallment>();
+
     public DbSet<Payable> Payables => Set<Payable>();
+
+    public DbSet<PayableInstallment> PayableInstallments => Set<PayableInstallment>();
+
+    public DbSet<SalesOrderLine> SalesOrderLines => Set<SalesOrderLine>();
+
+    public DbSet<PurchaseOrderLine> PurchaseOrderLines => Set<PurchaseOrderLine>();
 
     public DbSet<Payment> Payments => Set<Payment>();
 

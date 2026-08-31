@@ -3,6 +3,7 @@ using Fluxora.Application.Common;
 using Fluxora.Application.Customers;
 using Fluxora.Application.Finance;
 using Fluxora.Application.Purchasing;
+using Fluxora.Application.Reporting;
 using Fluxora.Application.Sales;
 using Fluxora.Application.Suppliers;
 using Fluxora.Infrastructure.Auditing;
@@ -60,6 +61,10 @@ public static class DependencyInjection
 
         services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
         services.AddScoped<PurchaseOrderService>();
+
+        services.AddSingleton(TimeProvider.System);
+        services.AddScoped<IReportingRepository, ReportingRepository>();
+        services.AddScoped<ReportingService>();
 
         return services;
     }
