@@ -20,4 +20,6 @@ public class PayableRepository(AppDbContext dbContext) : IPayableRepository
             .ToListAsync(cancellationToken);
 
     public void Add(Payable payable) => dbContext.Payables.Add(payable);
+
+    public void AddPayment(Payment payment) => dbContext.Payments.Add(payment);
 }

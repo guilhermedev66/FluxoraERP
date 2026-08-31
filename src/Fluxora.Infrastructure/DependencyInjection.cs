@@ -7,6 +7,7 @@ using Fluxora.Application.Sales;
 using Fluxora.Application.Suppliers;
 using Fluxora.Infrastructure.Auditing;
 using Fluxora.Infrastructure.Identity;
+using Fluxora.Infrastructure.Idempotency;
 using Fluxora.Infrastructure.Persistence;
 using Fluxora.Infrastructure.Persistence.Repositories;
 using Microsoft.AspNetCore.Identity;
@@ -48,7 +49,11 @@ public static class DependencyInjection
 
         services.AddScoped<IReceivableRepository, ReceivableRepository>();
         services.AddScoped<IPayableRepository, PayableRepository>();
+        services.AddScoped<ICashMovementRepository, CashMovementRepository>();
+        services.AddScoped<IIdempotencyStore, IdempotencyStore>();
         services.AddScoped<FinanceQueryService>();
+        services.AddScoped<PaymentService>();
+        services.AddScoped<ReceiptService>();
 
         services.AddScoped<ISalesOrderRepository, SalesOrderRepository>();
         services.AddScoped<SalesOrderService>();

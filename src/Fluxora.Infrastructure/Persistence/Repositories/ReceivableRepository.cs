@@ -20,4 +20,6 @@ public class ReceivableRepository(AppDbContext dbContext) : IReceivableRepositor
             .ToListAsync(cancellationToken);
 
     public void Add(Receivable receivable) => dbContext.Receivables.Add(receivable);
+
+    public void AddReceipt(Receipt receipt) => dbContext.Receipts.Add(receipt);
 }

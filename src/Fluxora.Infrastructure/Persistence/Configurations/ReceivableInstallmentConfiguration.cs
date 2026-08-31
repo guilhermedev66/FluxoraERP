@@ -16,6 +16,7 @@ public class ReceivableInstallmentConfiguration : IEntityTypeConfiguration<Recei
         builder.Property(i => i.AmountPaid).HasPrecision(19, 2);
         builder.Property(i => i.Status).HasConversion<string>().HasMaxLength(20);
         builder.Property(i => i.Version).IsConcurrencyToken();
+        builder.Ignore(i => i.RemainingAmount);
 
         builder.HasIndex(i => new { i.ReceivableId, i.Number }).IsUnique();
         builder.HasIndex(i => i.DueDate);

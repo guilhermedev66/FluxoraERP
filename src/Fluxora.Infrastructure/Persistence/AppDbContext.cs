@@ -32,6 +32,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<Payable> Payables => Set<Payable>();
 
+    public DbSet<Payment> Payments => Set<Payment>();
+
+    public DbSet<Receipt> Receipts => Set<Receipt>();
+
+    public DbSet<CashMovement> CashMovements => Set<CashMovement>();
+
+    public DbSet<Idempotency.IdempotencyRecord> IdempotencyRecords => Set<Idempotency.IdempotencyRecord>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -48,10 +56,27 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
         builder.ApplyConfiguration(new ReceivableInstallmentConfiguration());
         builder.ApplyConfiguration(new PayableConfiguration());
         builder.ApplyConfiguration(new PayableInstallmentConfiguration());
+        builder.ApplyConfiguration(new PaymentConfiguration());
+        builder.ApplyConfiguration(new ReceiptConfiguration());
+        builder.ApplyConfiguration(new CashMovementConfiguration());
+        builder.ApplyConfiguration(new Configurations.IdempotencyRecordConfiguration());
     }
 
+    /// <summary>
+    /// Translates EF Core's optimistic-concurrency exception into the application-level
+    /// ConcurrencyConflictException, so every caller (any entity with an IsConcurrencyToken)
+    /// gets the same 409 behavior without depending on EF Core types itself.
+    /// </summary>
     async Task IUnitOfWork.SaveChangesAsync(CancellationToken cancellationToken)
     {
-        await SaveChangesAsync(cancellationToken);
+        try
+        {
+            await SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ConcurrencyConflictException(
+                "The record was modified by another request since it was loaded. Reload and try again.");
+        }
     }
 }
