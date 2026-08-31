@@ -14,13 +14,17 @@ public class Product : BaseEntity
 
     public decimal Price { get; private set; }
 
+    /// <summary>Free-text expense/revenue category, used by the "despesas por categoria" report.</summary>
+    public string? Category { get; private set; }
+
     public bool IsActive { get; private set; } = true;
 
-    private Product(string sku, string name, decimal price)
+    private Product(string sku, string name, decimal price, string? category)
     {
         Sku = sku;
         Name = name;
         Price = price;
+        Category = category;
     }
 
     private Product()
@@ -29,7 +33,7 @@ public class Product : BaseEntity
         Name = string.Empty;
     }
 
-    public static Product Create(string sku, string name, decimal price)
+    public static Product Create(string sku, string name, decimal price, string? category = null)
     {
         if (string.IsNullOrWhiteSpace(sku))
         {
@@ -46,10 +50,10 @@ public class Product : BaseEntity
             throw new ArgumentOutOfRangeException(nameof(price), "Product price must be positive.");
         }
 
-        return new Product(sku.Trim(), name.Trim(), price);
+        return new Product(sku.Trim(), name.Trim(), price, string.IsNullOrWhiteSpace(category) ? null : category.Trim());
     }
 
-    public void Update(string name, decimal price)
+    public void Update(string name, decimal price, string? category = null)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -63,6 +67,7 @@ public class Product : BaseEntity
 
         Name = name.Trim();
         Price = price;
+        Category = string.IsNullOrWhiteSpace(category) ? null : category.Trim();
     }
 
     public void Deactivate() => IsActive = false;

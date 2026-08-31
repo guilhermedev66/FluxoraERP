@@ -14,7 +14,7 @@ public class PurchaseOrderConfiguration : IEntityTypeConfiguration<PurchaseOrder
 
         builder.Property(o => o.Status).HasConversion<string>().HasMaxLength(20);
         builder.Property(o => o.Version).IsConcurrencyToken();
-        builder.Ignore(o => o.Total);
+        builder.Property(o => o.Total).HasPrecision(19, 2);
 
         builder.HasMany(o => o.Lines)
             .WithOne()
@@ -23,5 +23,6 @@ public class PurchaseOrderConfiguration : IEntityTypeConfiguration<PurchaseOrder
 
         builder.HasIndex(o => o.SupplierId);
         builder.HasIndex(o => o.Status);
+        builder.HasIndex(o => o.ConfirmedAtUtc);
     }
 }

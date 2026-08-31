@@ -31,7 +31,7 @@ public class ProductService(
             throw new ConflictException($"A product with SKU '{request.Sku}' already exists.");
         }
 
-        var product = Product.Create(request.Sku, request.Name, request.Price);
+        var product = Product.Create(request.Sku, request.Name, request.Price, request.Category);
         repository.Add(product);
 
         auditWriter.Record(
@@ -51,7 +51,7 @@ public class ProductService(
             ?? throw new NotFoundException(nameof(Product), id);
 
         var before = JsonSerializer.Serialize(ToDto(product));
-        product.Update(request.Name, request.Price);
+        product.Update(request.Name, request.Price, request.Category);
 
         auditWriter.Record(
             action: "ProductUpdated",
@@ -89,5 +89,5 @@ public class ProductService(
     }
 
     private static ProductDto ToDto(Product product) =>
-        new(product.Id, product.Sku, product.Name, product.Price, product.IsActive, product.CreatedAtUtc);
+        new(product.Id, product.Sku, product.Name, product.Price, product.Category, product.IsActive, product.CreatedAtUtc);
 }

@@ -15,7 +15,9 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.Sku).IsRequired().HasMaxLength(50);
         builder.Property(p => p.Name).IsRequired().HasMaxLength(200);
         builder.Property(p => p.Price).HasPrecision(19, 4);
+        builder.Property(p => p.Category).HasMaxLength(100);
 
         builder.HasIndex(p => p.Sku).IsUnique();
+        builder.HasIndex(p => p.Category);
     }
 }

@@ -18,7 +18,11 @@ public class SalesOrder : BaseEntity
 
     public IReadOnlyList<SalesOrderLine> Lines => _lines.AsReadOnly();
 
-    public decimal Total => _lines.Sum(l => l.LineTotal);
+    /// <summary>
+    /// Persisted (not recomputed from Lines on every read) so reporting queries can SUM it
+    /// directly in SQL without joining/materializing every order's line items.
+    /// </summary>
+    public decimal Total { get; private set; }
 
     private SalesOrder(Guid customerId, Guid createdByUserId)
     {
@@ -36,6 +40,7 @@ public class SalesOrder : BaseEntity
 
         var line = new SalesOrderLine(Id, productId, productName, quantity, unitPrice);
         _lines.Add(line);
+        Total += line.LineTotal;
         return line;
     }
 
