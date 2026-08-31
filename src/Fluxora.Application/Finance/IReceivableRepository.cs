@@ -11,4 +11,6 @@ public interface IReceivableRepository
     Task<IReadOnlyList<Receivable>> ListAsync(int page, int pageSize, CancellationToken cancellationToken = default);
 
     void Add(Receivable receivable);
+
+    void AddReceipt(Receipt receipt);
 }

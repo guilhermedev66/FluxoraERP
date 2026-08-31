@@ -46,4 +46,12 @@ public class Receivable : BaseEntity
 
         return receivable;
     }
+
+    /// <summary>
+    /// Entry point for applying a receipt - keeps the Receivable aggregate root in control of
+    /// which installment gets mutated, even though the concurrency token lives on the
+    /// installment itself.
+    /// </summary>
+    public ReceivableInstallment? FindInstallment(Guid installmentId) =>
+        _installments.FirstOrDefault(i => i.Id == installmentId);
 }

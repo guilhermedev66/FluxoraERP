@@ -37,4 +37,34 @@ public class ReceivableInstallment
     }
 
     private ReceivableInstallment() { }
+
+    public decimal RemainingAmount => decimal.Round(Amount - AmountPaid, 2, MidpointRounding.AwayFromZero);
+
+    /// <summary>
+    /// Applies a receipt amount. The caller (application layer) is responsible for the
+    /// expected-Version pre-check; this always increments Version so EF's own optimistic
+    /// concurrency check on SaveChanges closes the race for two truly simultaneous callers.
+    /// </summary>
+    public void ApplyReceipt(decimal amount)
+    {
+        if (Status is InstallmentStatus.Paid or InstallmentStatus.Cancelled)
+        {
+            throw new InvalidOperationException($"Cannot apply a receipt to an installment with status '{Status}'.");
+        }
+
+        if (amount <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount), "Receipt amount must be positive.");
+        }
+
+        if (amount > RemainingAmount)
+        {
+            throw new InvalidOperationException(
+                $"Receipt amount {amount:0.00} exceeds the remaining balance {RemainingAmount:0.00} of installment {Number}.");
+        }
+
+        AmountPaid += amount;
+        Status = RemainingAmount == 0 ? InstallmentStatus.Paid : Status;
+        Version++;
+    }
 }

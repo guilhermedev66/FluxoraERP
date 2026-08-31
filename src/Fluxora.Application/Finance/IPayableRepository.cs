@@ -11,4 +11,6 @@ public interface IPayableRepository
     Task<IReadOnlyList<Payable>> ListAsync(int page, int pageSize, CancellationToken cancellationToken = default);
 
     void Add(Payable payable);
+
+    void AddPayment(Payment payment);
 }

@@ -46,4 +46,12 @@ public class Payable : BaseEntity
 
         return payable;
     }
+
+    /// <summary>
+    /// Entry point for applying a payment - keeps the Payable aggregate root in control of
+    /// which installment gets mutated, even though the concurrency token lives on the
+    /// installment itself.
+    /// </summary>
+    public PayableInstallment? FindInstallment(Guid installmentId) =>
+        _installments.FirstOrDefault(i => i.Id == installmentId);
 }
