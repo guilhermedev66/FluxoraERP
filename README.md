@@ -59,7 +59,7 @@ Regra de negócio vive no domínio (`Customer`, `Supplier`, `SalesOrder`, `Purch
 - ✅ **Milestone 1 — Foundation**: solution .NET 10, PostgreSQL, Identity (roles Admin/Manager/Sales/Finance), clientes, fornecedores, auditoria append-only, Docker
 - ✅ **Milestone 2 — Sales & Purchasing**: catálogo, ciclo de vida de vendas/compras, geração inicial de contas a receber/pagar
 - ⚠️ **Milestone 3 — Finance**: implementação concluída, revisão adversarial independente pendente antes de considerar definitivamente encerrado (pagamentos/recebimentos com idempotência, concorrência, fluxo de caixa)
-- 🚧 **Milestone 4 — Reporting & Dashboard**
+- 🚧 **Milestone 4 — Reporting & Dashboard**: endpoints de relatório concluídos no backend, dashboard no frontend em construção
 - ⏳ **Milestone 5 — Automation & Data Exchange** (background jobs, CSV)
 - ⏳ **Milestone 6 — Production Readiness**
 
@@ -88,7 +88,15 @@ Regra de negócio vive no domínio (`Customer`, `Supplier`, `SalesOrder`, `Purch
 - [x] Pagamento/recebimento parcial e integral, rejeição de valor acima do saldo restante, parcela `Paid` não aceita novo lançamento
 - [x] `CashMovement` (fluxo de caixa) gerado na mesma transação de cada pagamento/recebimento
 - [x] Auditoria (`PaymentApplied`, `ReceiptApplied`)
-- [ ] Relatórios de fluxo de caixa/DRE — Milestone 4
+
+**Milestone 4 — Reporting & Dashboard (backend)**
+- [x] `GET /api/reports/revenue`, `/expenses`, `/net-result` — agregados mensais calculados via `SUM`/`GROUP BY` no PostgreSQL, sem carregar entidades inteiras
+- [x] `GET /api/reports/overdue` e `/upcoming-due` — dados do "Farol de Vencimentos" (vencidos / vencem hoje / a vencer)
+- [x] `GET /api/reports/cash-flow` (realizado, com saldo acumulado) e `/cash-flow-projected` (parcelas pendentes futuras)
+- [x] `GET /api/reports/top-customers` e `/expenses-by-category`
+- [x] `GET /api/reports/dashboard-summary` — KPIs consolidados numa única chamada
+- [x] Todos os relatórios aceitam filtro por período (`from`/`to`)
+- [ ] Dashboard no frontend — em construção
 
 ## Como executar
 
@@ -129,7 +137,7 @@ dotnet test tests/Fluxora.UnitTests           # não precisa de Docker
 dotnet test tests/Fluxora.IntegrationTests    # precisa de Docker (Testcontainers)
 ```
 
-51 testes unitários (domínio: Customer/Supplier/SalesOrder/PurchaseOrder/Receivable/Payable, parcelamento, regras de pagamento/recebimento) e testes de integração cobrindo autenticação, CRUD, o fluxo "venda aprovada gera conta a receber com parcelas corretas", idempotência (replay exato, conflito de chave reutilizada) e concorrência real (duas requisições HTTP paralelas contra a mesma parcela — só uma pode ganhar) contra a API real via Testcontainers.
+57 testes unitários (domínio: Customer/Supplier/Product/SalesOrder/PurchaseOrder/Receivable/Payable, parcelamento, regras de pagamento/recebimento) e testes de integração cobrindo autenticação, CRUD, o fluxo "venda aprovada gera conta a receber com parcelas corretas", idempotência (replay exato, conflito de chave reutilizada), concorrência real (duas requisições HTTP paralelas contra a mesma parcela — só uma pode ganhar) e relatórios (receita, fluxo de caixa, vencidos) refletindo dados reais, contra a API real via Testcontainers.
 
 ## Licença
 

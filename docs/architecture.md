@@ -57,6 +57,15 @@ Business rules live in the domain (aggregates), never in controllers/services.
   interceptor. `UPDATE`/`DELETE` are blocked at the database level (PostgreSQL rules); a
   correction is always a new compensating entry.
 
+## Reporting (Milestone 4)
+
+All reports are aggregation queries (`SUM`/`COUNT`/`GROUP BY`) executed in PostgreSQL via EF
+Core, never computed by loading full entity graphs into memory. This required persisting
+`SalesOrder.Total`/`PurchaseOrder.Total` (previously recomputed from `Lines` on every read -
+correct for a single order, unusable for a `SUM` across thousands of them). `ReportingRepository`
+is the only place report SQL lives; `ReportingService` just orchestrates and applies defaults
+(current month, today's date) - no business logic leaks into the API controller.
+
 ## Frontend architecture (Milestone 2+)
 
 Feature-module structure (`modules/vendas`, `modules/financeiro`, ...) over a `shared/` layer
