@@ -1,5 +1,9 @@
+using Fluxora.Application.Catalog;
 using Fluxora.Application.Common;
 using Fluxora.Application.Customers;
+using Fluxora.Application.Finance;
+using Fluxora.Application.Purchasing;
+using Fluxora.Application.Sales;
 using Fluxora.Application.Suppliers;
 using Fluxora.Infrastructure.Auditing;
 using Fluxora.Infrastructure.Identity;
@@ -38,6 +42,19 @@ public static class DependencyInjection
 
         services.AddScoped<ISupplierRepository, SupplierRepository>();
         services.AddScoped<SupplierService>();
+
+        services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<ProductService>();
+
+        services.AddScoped<IReceivableRepository, ReceivableRepository>();
+        services.AddScoped<IPayableRepository, PayableRepository>();
+        services.AddScoped<FinanceQueryService>();
+
+        services.AddScoped<ISalesOrderRepository, SalesOrderRepository>();
+        services.AddScoped<SalesOrderService>();
+
+        services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
+        services.AddScoped<PurchaseOrderService>();
 
         return services;
     }
