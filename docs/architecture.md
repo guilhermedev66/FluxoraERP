@@ -25,12 +25,27 @@ Business rules live in the domain (aggregates), never in controllers/services.
 - **Money**: always `decimal`, never `double`. PostgreSQL `numeric(19,2)` for totals/installments,
   `numeric(19,4)` for sub-cent unit prices. Rounding centralized, `MidpointRounding.AwayFromZero`.
   Installment splitting: base cents per installment, last installment absorbs the remainder.
-- **Idempotency**: `Idempotency-Key` header required on financial mutations. Dedicated table
-  (`CompanyId, Operation, Key, RequestHash, ResponseStatus, ResponseBody`), unique constraint,
-  `INSERT ... ON CONFLICT DO NOTHING` flow. Financial idempotency keys never expire.
-- **Concurrency**: explicit `Version` int column as an EF Core concurrency token on mutable
-  financial aggregates (same pattern as the sibling HelpDesk project's `Ticket.Version`).
-  Mismatch surfaces as `409 Conflict` via `DbUpdateConcurrencyException`.
+- **Idempotency**: `Idempotency-Key` header required on `POST .../payments` and `.../receipts`.
+  `IdempotencyRecords` table (`Operation, Key, RequestHash, ResponseStatus, ResponseBody`),
+  unique index on `(Operation, Key)`. Check-then-act: look up by key first — same hash replays
+  the stored response, different hash is a `409`. The request hash covers the logical command
+  (installment id, amount, expected version), never the transport-level header itself. Financial
+  idempotency records are never expired/deleted. *Known gap:* two requests with the identical,
+  brand-new key arriving at the exact same instant both pass the initial lookup before either
+  commits; the unique index still prevents a duplicate row, but the loser gets a raw `DbUpdateException`
+  instead of a graceful replay. This doesn't cause a double payment (see Concurrency below,
+  which is what actually closes that race) — it's a UX polish item for a retry, not a
+  correctness gap.
+- **Concurrency**: explicit `Version` int column as an EF Core concurrency token on
+  `PayableInstallment`/`ReceivableInstallment` (same pattern as the sibling HelpDesk project's
+  `Ticket.Version`). The application layer compares the caller's `ExpectedVersion` before
+  mutating (fast, clear error); EF Core's own optimistic-concurrency check on `SaveChanges` is
+  the real race-closer for two simultaneous requests that both pass that early check — one
+  `UPDATE ... WHERE Version = @expected` wins, the other affects zero rows and raises
+  `DbUpdateConcurrencyException`, translated centrally in `AppDbContext` to
+  `ConcurrencyConflictException` → `409`. Proven under a genuine parallel-request test
+  (`PaymentApplicationTests.ApplyPayment_TwoTrulyConcurrentRequests_OnlyOneSucceeds`), not just
+  asserted.
 - **Background processing**: Quartz.NET in-process with a persistent PostgreSQL `AdoJobStore`
   — no Redis, no separate worker service. Used for overdue-installment sweeps, recurrence
   generation, and scheduled report prep.
