@@ -15,5 +15,11 @@ public interface ICustomerRepository
         int pageSize,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlySet<string>> GetExistingDocumentsAsync(
+        IEnumerable<string> documents, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Customer>> ListForExportAsync(
+        string? search, bool? isActive, CancellationToken cancellationToken = default);
+
     void Add(Customer customer);
 }

@@ -45,6 +45,7 @@ public static class DependencyInjection
 
         services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<CustomerService>();
+        services.AddScoped<CustomerCsvService>();
 
         services.AddScoped<ISupplierRepository, SupplierRepository>();
         services.AddScoped<SupplierService>();

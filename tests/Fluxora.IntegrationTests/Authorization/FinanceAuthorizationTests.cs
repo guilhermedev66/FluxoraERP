@@ -16,6 +16,7 @@ public class FinanceAuthorizationTests(FluxoraApiFactory factory) : IClassFixtur
     [InlineData("/api/cash-movements")]
     [InlineData("/api/reports/dashboard-summary")]
     [InlineData("/api/automation/dashboard-snapshots")]
+    [InlineData("/api/customers/export")]
     public async Task SalesRole_CannotAccessFinanceOrReporting(string path)
     {
         var client = await CreateClientForRoleAsync(AppRoles.Sales);
@@ -35,6 +36,18 @@ public class FinanceAuthorizationTests(FluxoraApiFactory factory) : IClassFixtur
         var response = await client.GetAsync(path);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SalesRole_CannotImportCustomerCsv()
+    {
+        var client = await CreateClientForRoleAsync(AppRoles.Sales);
+        using var content = new MultipartFormDataContent();
+        content.Add(new ByteArrayContent("name,document,email,phone\nTest,DOC-1,,"u8.ToArray()), "file", "customers.csv");
+
+        var response = await client.PostAsync("/api/customers/import", content);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     private async Task<HttpClient> CreateClientForRoleAsync(string role)

@@ -76,6 +76,7 @@ public class SalesOrderService(
         var order = await orderRepository.GetByIdAsync(orderId, cancellationToken)
             ?? throw new NotFoundException(nameof(SalesOrder), orderId);
 
+        var before = JsonSerializer.Serialize(new { order.Status, order.Version });
         order.Approve();
 
         var receivable = Receivable.Create(
@@ -84,7 +85,9 @@ public class SalesOrderService(
 
         auditWriter.Record(
             "SalesOrderApproved", nameof(SalesOrder), order.Id,
-            afterValues: JsonSerializer.Serialize(new { order.Total, order.Version }), actorId: currentUser.UserId);
+            beforeValues: before,
+            afterValues: JsonSerializer.Serialize(new { order.Status, order.Total, order.Version }),
+            actorId: currentUser.UserId);
         auditWriter.Record(
             "ReceivableCreated", nameof(Receivable), receivable.Id,
             afterValues: JsonSerializer.Serialize(new { receivable.SalesOrderId, receivable.TotalAmount, InstallmentCount = receivable.Installments.Count }),
@@ -99,9 +102,16 @@ public class SalesOrderService(
         var order = await orderRepository.GetByIdAsync(orderId, cancellationToken)
             ?? throw new NotFoundException(nameof(SalesOrder), orderId);
 
+        var before = JsonSerializer.Serialize(new { order.Status, order.Version });
         order.Cancel();
 
-        auditWriter.Record("SalesOrderCancelled", nameof(SalesOrder), order.Id, actorId: currentUser.UserId);
+        auditWriter.Record(
+            "SalesOrderCancelled",
+            nameof(SalesOrder),
+            order.Id,
+            beforeValues: before,
+            afterValues: JsonSerializer.Serialize(new { order.Status, order.Version }),
+            actorId: currentUser.UserId);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return ToDto(order);

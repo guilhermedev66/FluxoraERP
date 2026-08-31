@@ -8,7 +8,7 @@ namespace Fluxora.Api.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/customers")]
-public class CustomersController(CustomerService customerService) : ControllerBase
+public class CustomersController(CustomerService customerService, CustomerCsvService customerCsvService) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<CustomerDto>>> List(
@@ -93,5 +93,43 @@ public class CustomersController(CustomerService customerService) : ControllerBa
         {
             return NotFound();
         }
+    }
+
+    [HttpPost("import")]
+    [Authorize(Policy = AppPolicies.DataExchangeManage)]
+    [RequestSizeLimit(5 * 1024 * 1024)]
+    public async Task<ActionResult<CustomerCsvImportResult>> Import(
+        IFormFile? file, CancellationToken cancellationToken)
+    {
+        if (file is null || file.Length == 0)
+        {
+            return ValidationProblem("A non-empty CSV file is required.");
+        }
+
+        if (!string.Equals(Path.GetExtension(file.FileName), ".csv", StringComparison.OrdinalIgnoreCase))
+        {
+            return ValidationProblem("The uploaded file must have a .csv extension.");
+        }
+
+        try
+        {
+            await using var stream = file.OpenReadStream();
+            return Ok(await customerCsvService.ImportAsync(stream, cancellationToken));
+        }
+        catch (InvalidCsvException exception)
+        {
+            return ValidationProblem(exception.Message);
+        }
+    }
+
+    [HttpGet("export")]
+    [Authorize(Policy = AppPolicies.DataExchangeManage)]
+    public async Task<IActionResult> Export(
+        [FromQuery] string? search,
+        [FromQuery] bool? isActive,
+        CancellationToken cancellationToken)
+    {
+        var export = await customerCsvService.ExportAsync(search, isActive, cancellationToken);
+        return File(export.Content, export.ContentType, export.FileName);
     }
 }

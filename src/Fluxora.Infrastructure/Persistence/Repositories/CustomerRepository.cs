@@ -37,4 +37,35 @@ public class CustomerRepository(AppDbContext dbContext) : ICustomerRepository
     }
 
     public void Add(Customer customer) => dbContext.Customers.Add(customer);
+
+    public async Task<IReadOnlySet<string>> GetExistingDocumentsAsync(
+        IEnumerable<string> documents, CancellationToken cancellationToken = default)
+    {
+        var values = documents.Distinct().ToArray();
+        var existing = await dbContext.Customers.AsNoTracking()
+            .Where(customer => values.Contains(customer.Document))
+            .Select(customer => customer.Document)
+            .ToListAsync(cancellationToken);
+        return existing.ToHashSet(StringComparer.Ordinal);
+    }
+
+    public async Task<IReadOnlyList<Customer>> ListForExportAsync(
+        string? search, bool? isActive, CancellationToken cancellationToken = default)
+    {
+        var query = dbContext.Customers.AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = $"%{search.Trim()}%";
+            query = query.Where(customer =>
+                EF.Functions.ILike(customer.Name, term) || EF.Functions.ILike(customer.Document, term));
+        }
+
+        if (isActive is not null)
+        {
+            query = query.Where(customer => customer.IsActive == isActive);
+        }
+
+        return await query.OrderBy(customer => customer.Name).ToListAsync(cancellationToken);
+    }
 }
