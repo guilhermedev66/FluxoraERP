@@ -35,7 +35,7 @@ public class CustomersApiTests(FluxoraApiFactory factory) : IClassFixture<Fluxor
     public async Task Create_ThenGetById_ReturnsTheSameCustomer()
     {
         var client = await CreateAuthenticatedClientAsync();
-        var document = $"CPF-{Guid.NewGuid():N}";
+        var document = TestData.UniqueDocument();
 
         var createResponse = await client.PostAsJsonAsync("/api/customers", new CreateCustomerRequest(
             "Acme Consultoria Ltda", document, "financeiro@acme.example", null));
@@ -57,7 +57,7 @@ public class CustomersApiTests(FluxoraApiFactory factory) : IClassFixture<Fluxor
     public async Task Create_WithDuplicateDocument_ReturnsConflict()
     {
         var client = await CreateAuthenticatedClientAsync();
-        var document = $"CPF-{Guid.NewGuid():N}";
+        var document = TestData.UniqueDocument();
 
         var first = await client.PostAsJsonAsync("/api/customers", new CreateCustomerRequest(
             "Primeiro Cliente", document, null, null));
@@ -72,7 +72,7 @@ public class CustomersApiTests(FluxoraApiFactory factory) : IClassFixture<Fluxor
     public async Task Deactivate_SetsCustomerInactive()
     {
         var client = await CreateAuthenticatedClientAsync();
-        var document = $"CPF-{Guid.NewGuid():N}";
+        var document = TestData.UniqueDocument();
 
         var createResponse = await client.PostAsJsonAsync("/api/customers", new CreateCustomerRequest(
             "Cliente Para Desativar", document, null, null));

@@ -34,7 +34,7 @@ public class ReportingTests(FluxoraApiFactory factory) : IClassFixture<FluxoraAp
         var client = await CreateAuthenticatedClientAsync();
 
         var customerResponse = await client.PostAsJsonAsync("/api/customers", new CreateCustomerRequest(
-            "Cliente Relatorios", $"CPF-{Guid.NewGuid():N}", null, null));
+            "Cliente Relatorios", TestData.UniqueDocument(), null, null));
         var customer = await customerResponse.Content.ReadFromJsonAsync<CustomerDto>();
 
         var productResponse = await client.PostAsJsonAsync("/api/products", new CreateProductRequest(
@@ -72,7 +72,7 @@ public class ReportingTests(FluxoraApiFactory factory) : IClassFixture<FluxoraAp
         var client = await CreateAuthenticatedClientAsync();
 
         var customerResponse = await client.PostAsJsonAsync("/api/customers", new CreateCustomerRequest(
-            "Cliente Caixa", $"CPF-{Guid.NewGuid():N}", null, null));
+            "Cliente Caixa", TestData.UniqueDocument(), null, null));
         var customer = await customerResponse.Content.ReadFromJsonAsync<CustomerDto>();
 
         var productResponse = await client.PostAsJsonAsync("/api/products", new CreateProductRequest(
@@ -121,7 +121,7 @@ public class ReportingTests(FluxoraApiFactory factory) : IClassFixture<FluxoraAp
         var client = await CreateAuthenticatedClientAsync();
 
         var customerResponse = await client.PostAsJsonAsync("/api/customers", new CreateCustomerRequest(
-            "Cliente Vencido", $"CPF-{Guid.NewGuid():N}", null, null));
+            "Cliente Vencido", TestData.UniqueDocument(), null, null));
         var customer = await customerResponse.Content.ReadFromJsonAsync<CustomerDto>();
 
         var productResponse = await client.PostAsJsonAsync("/api/products", new CreateProductRequest(

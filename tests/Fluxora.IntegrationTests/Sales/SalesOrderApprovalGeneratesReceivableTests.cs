@@ -34,7 +34,7 @@ public class SalesOrderApprovalGeneratesReceivableTests(FluxoraApiFactory factor
         var client = await CreateAuthenticatedClientAsync();
 
         var customerResponse = await client.PostAsJsonAsync("/api/customers", new CreateCustomerRequest(
-            "Cliente Fluxo de Vendas", $"CPF-{Guid.NewGuid():N}", null, null));
+            "Cliente Fluxo de Vendas", TestData.UniqueDocument(), null, null));
         customerResponse.EnsureSuccessStatusCode();
         var customer = await customerResponse.Content.ReadFromJsonAsync<CustomerDto>();
 
@@ -76,7 +76,7 @@ public class SalesOrderApprovalGeneratesReceivableTests(FluxoraApiFactory factor
         var client = await CreateAuthenticatedClientAsync();
 
         var customerResponse = await client.PostAsJsonAsync("/api/customers", new CreateCustomerRequest(
-            "Cliente Sem Linhas", $"CPF-{Guid.NewGuid():N}", null, null));
+            "Cliente Sem Linhas", TestData.UniqueDocument(), null, null));
         var customer = await customerResponse.Content.ReadFromJsonAsync<CustomerDto>();
 
         var orderResponse = await client.PostAsJsonAsync("/api/sales-orders", new CreateSalesOrderRequest(customer!.Id));

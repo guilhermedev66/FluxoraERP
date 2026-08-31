@@ -32,7 +32,7 @@ public class PaymentApplicationTests(FluxoraApiFactory factory) : IClassFixture<
     private async Task<PayableDto> CreatePayableWithOneInstallmentAsync(HttpClient client, decimal total = 100m)
     {
         var supplierResponse = await client.PostAsJsonAsync("/api/suppliers", new CreateSupplierRequest(
-            "Fornecedor Pagamentos", $"CNPJ-{Guid.NewGuid():N}", null, null));
+            "Fornecedor Pagamentos", TestData.UniqueDocument(), null, null));
         supplierResponse.EnsureSuccessStatusCode();
         var supplier = await supplierResponse.Content.ReadFromJsonAsync<SupplierDto>();
 

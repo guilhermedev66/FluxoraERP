@@ -11,6 +11,7 @@ public class PurchaseOrderLineConfiguration : IEntityTypeConfiguration<PurchaseO
         builder.ToTable("PurchaseOrderLines");
 
         builder.HasKey(l => l.Id);
+        builder.Property(l => l.Id).ValueGeneratedNever();
 
         builder.Property(l => l.ProductName).IsRequired().HasMaxLength(200);
         builder.Property(l => l.Quantity).HasPrecision(19, 4);

@@ -31,7 +31,7 @@ public class ReceiptApplicationTests(FluxoraApiFactory factory) : IClassFixture<
     private async Task<ReceivableDto> CreateReceivableWithOneInstallmentAsync(HttpClient client, decimal total = 100m)
     {
         var customerResponse = await client.PostAsJsonAsync("/api/customers", new CreateCustomerRequest(
-            "Cliente Recebimentos", $"CPF-{Guid.NewGuid():N}", null, null));
+            "Cliente Recebimentos", TestData.UniqueDocument(), null, null));
         var customer = await customerResponse.Content.ReadFromJsonAsync<CustomerDto>();
 
         var productResponse = await client.PostAsJsonAsync("/api/products", new Fluxora.Application.Catalog.CreateProductRequest(
