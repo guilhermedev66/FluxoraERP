@@ -16,27 +16,25 @@ public class OverdueProcessingService(
     public async Task<OverdueProcessingResult> ProcessAsync(CancellationToken cancellationToken = default)
     {
         var asOf = businessClock.Today;
-        var receivables = await repository.GetPendingReceivablesDueBeforeAsync(asOf, cancellationToken);
-        var payables = await repository.GetPendingPayablesDueBeforeAsync(asOf, cancellationToken);
+        var receivableIds = await repository.GetPendingReceivableIdsDueBeforeAsync(asOf, cancellationToken);
+        var payableIds = await repository.GetPendingPayableIdsDueBeforeAsync(asOf, cancellationToken);
 
-        var receivablesMarked = MarkReceivables(receivables, asOf);
-        var payablesMarked = MarkPayables(payables, asOf);
-
-        if (receivablesMarked > 0 || payablesMarked > 0)
-        {
-            await unitOfWork.SaveChangesAsync(cancellationToken);
-        }
+        var receivablesMarked = await MarkReceivablesAsync(receivableIds, asOf, cancellationToken);
+        var payablesMarked = await MarkPayablesAsync(payableIds, asOf, cancellationToken);
 
         return new OverdueProcessingResult(asOf, receivablesMarked, payablesMarked);
     }
 
-    private int MarkReceivables(IEnumerable<ReceivableInstallment> installments, DateOnly asOf)
+    private async Task<int> MarkReceivablesAsync(
+        IEnumerable<Guid> installmentIds, DateOnly asOf, CancellationToken cancellationToken)
     {
         var marked = 0;
-        foreach (var installment in installments)
+        foreach (var installmentId in installmentIds)
         {
-            var versionBefore = installment.Version;
-            if (!installment.MarkOverdue(asOf))
+            await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken: cancellationToken);
+            var transition = await repository.TryMarkReceivableOverdueAsync(
+                installmentId, asOf, cancellationToken);
+            if (transition is null)
             {
                 continue;
             }
@@ -44,23 +42,38 @@ public class OverdueProcessingService(
             auditWriter.Record(
                 "ReceivableInstallmentMarkedOverdue",
                 nameof(ReceivableInstallment),
-                installment.Id,
-                beforeValues: JsonSerializer.Serialize(new { Status = InstallmentStatus.Pending, Version = versionBefore }),
-                afterValues: JsonSerializer.Serialize(new { installment.Status, installment.Version, asOf }),
+                transition.InstallmentId,
+                beforeValues: JsonSerializer.Serialize(new
+                {
+                    Status = InstallmentStatus.Pending,
+                    Version = transition.VersionBefore,
+                }),
+                afterValues: JsonSerializer.Serialize(new
+                {
+                    Status = InstallmentStatus.Overdue,
+                    Version = transition.VersionAfter,
+                    asOf,
+                }),
                 actorType: ActorType.System);
+
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
             marked++;
         }
 
         return marked;
     }
 
-    private int MarkPayables(IEnumerable<PayableInstallment> installments, DateOnly asOf)
+    private async Task<int> MarkPayablesAsync(
+        IEnumerable<Guid> installmentIds, DateOnly asOf, CancellationToken cancellationToken)
     {
         var marked = 0;
-        foreach (var installment in installments)
+        foreach (var installmentId in installmentIds)
         {
-            var versionBefore = installment.Version;
-            if (!installment.MarkOverdue(asOf))
+            await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken: cancellationToken);
+            var transition = await repository.TryMarkPayableOverdueAsync(
+                installmentId, asOf, cancellationToken);
+            if (transition is null)
             {
                 continue;
             }
@@ -68,10 +81,22 @@ public class OverdueProcessingService(
             auditWriter.Record(
                 "PayableInstallmentMarkedOverdue",
                 nameof(PayableInstallment),
-                installment.Id,
-                beforeValues: JsonSerializer.Serialize(new { Status = InstallmentStatus.Pending, Version = versionBefore }),
-                afterValues: JsonSerializer.Serialize(new { installment.Status, installment.Version, asOf }),
+                transition.InstallmentId,
+                beforeValues: JsonSerializer.Serialize(new
+                {
+                    Status = InstallmentStatus.Pending,
+                    Version = transition.VersionBefore,
+                }),
+                afterValues: JsonSerializer.Serialize(new
+                {
+                    Status = InstallmentStatus.Overdue,
+                    Version = transition.VersionAfter,
+                    asOf,
+                }),
                 actorType: ActorType.System);
+
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
             marked++;
         }
 
