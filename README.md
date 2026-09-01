@@ -28,7 +28,7 @@ Projeto de portfólio para demonstrar regras de negócio reais, workflows corpor
 
 | Camada | Tecnologia |
 |---|---|
-| Backend | C# · .NET 10 · ASP.NET Core Web API · Entity Framework Core · PostgreSQL · ASP.NET Core Identity (JWT + roles) |
+| Backend | C# · .NET 10 · ASP.NET Core Web API · Entity Framework Core · PostgreSQL · ASP.NET Core Identity (JWT + roles) · Quartz.NET |
 | Frontend | React · TypeScript · Vite · Tailwind (em progresso) |
 | Qualidade | xUnit · Testcontainers (PostgreSQL) |
 | Infra | Docker · GitHub Actions (CI, em progresso) |
@@ -58,9 +58,9 @@ Regra de negócio vive no domínio (`Customer`, `Supplier`, `SalesOrder`, `Purch
 - ✅ **Milestone 0 — Discovery & Architecture**
 - ✅ **Milestone 1 — Foundation**: solution .NET 10, PostgreSQL, Identity (roles Admin/Manager/Sales/Finance), clientes, fornecedores, auditoria append-only, Docker
 - ✅ **Milestone 2 — Sales & Purchasing**: catálogo, ciclo de vida de vendas/compras, geração inicial de contas a receber/pagar
-- ⚠️ **Milestone 3 — Finance**: implementação concluída, revisão adversarial independente pendente antes de considerar definitivamente encerrado (pagamentos/recebimentos com idempotência, concorrência, fluxo de caixa)
-- 🚧 **Milestone 4 — Reporting & Dashboard**: endpoints de relatório concluídos no backend, dashboard no frontend em construção
-- ⏳ **Milestone 5 — Automation & Data Exchange** (background jobs, CSV)
+- ✅ **Milestone 3 — Finance**: pagamentos/recebimentos com idempotência, concorrência otimista e ledger de caixa, validados por revisão adversarial e testes paralelos reais
+- ✅ **Milestone 4 — Reporting & Dashboard**: 10 endpoints de relatório com agregações SQL e dashboard integrado
+- ✅ **Milestone 5 — Automation & Data Exchange**: Quartz persistente, processamento de vencidos, snapshots diários e CSV de clientes
 - ⏳ **Milestone 6 — Production Readiness**
 
 ## Funcionalidades em progresso
@@ -75,8 +75,8 @@ Regra de negócio vive no domínio (`Customer`, `Supplier`, `SalesOrder`, `Purch
 
 **Milestone 2 — Sales & Purchasing**
 - [x] Catálogo de produtos (`Products`, SKU único)
-- [x] Vendas: `Draft → Approved → Cancelled`, linhas travadas após aprovação
-- [x] Compras: `Draft → Confirmed → Cancelled`, preço de custo explícito por linha
+- [x] Vendas: `Draft → Approved` ou `Draft → Cancelled`, linhas e cancelamento travados após aprovação
+- [x] Compras: `Draft → Confirmed` ou `Draft → Cancelled`, preço de custo explícito por linha
 - [x] Aprovar uma venda gera uma `Receivable` (contas a receber) na mesma transação; confirmar uma compra gera uma `Payable`
 - [x] Parcelamento com distribuição exata em centavos (última parcela absorve o resto de arredondamento)
 - [x] Endpoints de leitura para contas a receber/pagar geradas (`GET /api/receivables`, `GET /api/payables`)
@@ -96,7 +96,16 @@ Regra de negócio vive no domínio (`Customer`, `Supplier`, `SalesOrder`, `Purch
 - [x] `GET /api/reports/top-customers` e `/expenses-by-category`
 - [x] `GET /api/reports/dashboard-summary` — KPIs consolidados numa única chamada
 - [x] Todos os relatórios aceitam filtro por período (`from`/`to`)
-- [ ] Dashboard no frontend — em construção
+- [x] Dashboard no frontend integrado aos endpoints reais de relatórios
+
+**Milestone 5 — Automation & Data Exchange**
+- [x] Quartz.NET 3.20 com AdoJobStore persistente no PostgreSQL, clustering e IDs estáveis de jobs/triggers
+- [x] Job diário de vencimentos: `Pending → Overdue`, idempotente, com concorrência via `Version`, logging e auditoria de ator `System`
+- [x] Preparação diária de snapshot do dashboard, única por data de negócio e recuperável após restart
+- [x] Calendário de negócio configurável (padrão `America/Sao_Paulo`) e cron schedules configuráveis por ambiente
+- [x] `POST /api/customers/import`: CSV UTF-8 com resultado detalhado (`total`, `imported`, `rejected`, `line`, `reason`), falha parcial, validações e auditoria correlacionada
+- [x] `GET /api/customers/export`: exportação filtrável de dados reais com escaping CSV e autorização `Admin`/`Manager`
+- [x] Policies explícitas para Financeiro, Relatórios, Automação e Data Exchange
 
 ## Como executar
 
@@ -115,6 +124,7 @@ export Jwt__Key="<sua chave de pelo menos 32 caracteres>"
 export Jwt__Issuer="Fluxora"
 export Jwt__Audience="Fluxora"
 export Database__ApplyMigrations="true"
+export Business__TimeZone="America/Sao_Paulo"
 
 dotnet run --project src/Fluxora.Api
 ```
@@ -137,7 +147,7 @@ dotnet test tests/Fluxora.UnitTests           # não precisa de Docker
 dotnet test tests/Fluxora.IntegrationTests    # precisa de Docker (Testcontainers)
 ```
 
-57 testes unitários (domínio: Customer/Supplier/Product/SalesOrder/PurchaseOrder/Receivable/Payable, parcelamento, regras de pagamento/recebimento) e testes de integração cobrindo autenticação, CRUD, o fluxo "venda aprovada gera conta a receber com parcelas corretas", idempotência (replay exato, conflito de chave reutilizada), concorrência real (duas requisições HTTP paralelas contra a mesma parcela — só uma pode ganhar) e relatórios (receita, fluxo de caixa, vencidos) refletindo dados reais, contra a API real via Testcontainers.
+Atualmente são **69 testes unitários** e **43 testes de integração**. A suíte cobre autenticação/autorização, CRUD, geração transacional de títulos, parcelamento exato, idempotência sequencial e realmente concorrente, conflito de versão, ledger de caixa, relatórios SQL, datas de negócio, jobs repetidos, persistência do Quartz, importação CSV parcial/totalmente inválida/válida, exportação e auditoria. Os testes de integração executam a API real contra PostgreSQL via Testcontainers.
 
 ## Licença
 
