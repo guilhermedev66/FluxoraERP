@@ -58,15 +58,34 @@ export function LoginPage() {
 
         <label className="mb-3 flex flex-col gap-1">
           <span className="text-xs font-semibold text-text-secondary">E-mail</span>
-          <input {...register('email')} type="email" className="input" autoFocus />
-          {errors.email && <span className="text-[11px] font-medium text-danger">{errors.email.message}</span>}
+          <input
+            {...register('email')}
+            type="email"
+            className="input"
+            autoFocus
+            aria-invalid={!!errors.email}
+            aria-describedby={errors.email ? 'email-error' : undefined}
+          />
+          {errors.email && (
+            <span id="email-error" className="text-[11px] font-medium text-danger">
+              {errors.email.message}
+            </span>
+          )}
         </label>
 
         <label className="mb-5 flex flex-col gap-1">
           <span className="text-xs font-semibold text-text-secondary">Senha</span>
-          <input {...register('password')} type="password" className="input" />
+          <input
+            {...register('password')}
+            type="password"
+            className="input"
+            aria-invalid={!!errors.password}
+            aria-describedby={errors.password ? 'password-error' : undefined}
+          />
           {errors.password && (
-            <span className="text-[11px] font-medium text-danger">{errors.password.message}</span>
+            <span id="password-error" className="text-[11px] font-medium text-danger">
+              {errors.password.message}
+            </span>
           )}
         </label>
 

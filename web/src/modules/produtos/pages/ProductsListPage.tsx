@@ -149,18 +149,40 @@ function NewProductForm({ onDone }: { onDone: () => void }) {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
           <span className="text-xs font-semibold text-text-secondary">SKU</span>
-          <input {...register('sku')} className="input font-mono" />
-          {errors.sku && <span className="text-[11px] font-medium text-danger">{errors.sku.message}</span>}
+          <input
+            {...register('sku')}
+            className="input font-mono"
+            aria-invalid={!!errors.sku}
+            aria-describedby={errors.sku ? 'sku-error' : undefined}
+          />
+          {errors.sku && (
+            <span id="sku-error" className="text-[11px] font-medium text-danger">
+              {errors.sku.message}
+            </span>
+          )}
         </label>
         <label className="flex flex-col gap-1">
           <span className="text-xs font-semibold text-text-secondary">Nome</span>
-          <input {...register('name')} className="input" />
-          {errors.name && <span className="text-[11px] font-medium text-danger">{errors.name.message}</span>}
+          <input
+            {...register('name')}
+            className="input"
+            aria-invalid={!!errors.name}
+            aria-describedby={errors.name ? 'name-error' : undefined}
+          />
+          {errors.name && (
+            <span id="name-error" className="text-[11px] font-medium text-danger">
+              {errors.name.message}
+            </span>
+          )}
         </label>
         <label className="flex flex-col gap-1">
           <span className="text-xs font-semibold text-text-secondary">Preço</span>
           <CurrencyInput name="price" control={control} />
-          {errors.price && <span className="text-[11px] font-medium text-danger">{errors.price.message}</span>}
+          {errors.price && (
+            <span id="price-error" className="text-[11px] font-medium text-danger">
+              {errors.price.message}
+            </span>
+          )}
         </label>
         <label className="flex flex-col gap-1">
           <span className="text-xs font-semibold text-text-secondary">Categoria</span>

@@ -20,6 +20,7 @@ export function CurrencyInput<TFieldValues extends FieldValues>({
       control={control}
       render={({ field: { onChange, value, ref, onBlur }, fieldState: { error } }) => (
         <NumericFormat
+          id={name}
           getInputRef={ref}
           value={value ?? ''}
           onBlur={onBlur}
@@ -30,6 +31,8 @@ export function CurrencyInput<TFieldValues extends FieldValues>({
           fixedDecimalScale
           allowNegative={false}
           onValueChange={(values) => onChange(values.floatValue ?? 0)}
+          aria-invalid={!!error}
+          aria-describedby={error ? `${name}-error` : undefined}
           className={cn(
             'input text-right font-mono tabular-nums',
             error && 'border-danger',

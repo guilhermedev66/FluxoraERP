@@ -142,7 +142,13 @@ function NewOrderForm({ onDone }: { onDone: () => void }) {
     <form onSubmit={onSubmit} className="mb-6 rounded border border-border bg-surface p-4">
       <label className="flex flex-col gap-1">
         <span className="text-xs font-semibold text-text-secondary">Cliente</span>
-        <select {...register('customerId')} className="input" defaultValue="">
+        <select
+          {...register('customerId')}
+          className="input"
+          defaultValue=""
+          aria-invalid={!!errors.customerId}
+          aria-describedby={errors.customerId ? 'customerId-error' : undefined}
+        >
           <option value="" disabled>
             Selecione um cliente...
           </option>
@@ -153,7 +159,9 @@ function NewOrderForm({ onDone }: { onDone: () => void }) {
           ))}
         </select>
         {errors.customerId && (
-          <span className="text-[11px] font-medium text-danger">{errors.customerId.message}</span>
+          <span id="customerId-error" className="text-[11px] font-medium text-danger">
+            {errors.customerId.message}
+          </span>
         )}
       </label>
       {createOrder.isError && (

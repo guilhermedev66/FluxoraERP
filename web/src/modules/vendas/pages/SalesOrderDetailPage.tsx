@@ -127,7 +127,13 @@ function AddLineForm({ orderId }: { orderId: string }) {
       <h2 className="mb-3 text-sm font-semibold text-text-primary">Adicionar Item</h2>
       <label className="mb-3 flex flex-col gap-1">
         <span className="text-xs font-semibold text-text-secondary">Produto</span>
-        <select {...register('productId')} className="input" defaultValue="">
+        <select
+          {...register('productId')}
+          className="input"
+          defaultValue=""
+          aria-invalid={!!errors.productId}
+          aria-describedby={errors.productId ? 'productId-error' : undefined}
+        >
           <option value="" disabled>
             Selecione...
           </option>
@@ -137,12 +143,28 @@ function AddLineForm({ orderId }: { orderId: string }) {
             </option>
           ))}
         </select>
-        {errors.productId && <span className="text-[11px] font-medium text-danger">{errors.productId.message}</span>}
+        {errors.productId && (
+          <span id="productId-error" className="text-[11px] font-medium text-danger">
+            {errors.productId.message}
+          </span>
+        )}
       </label>
       <label className="mb-3 flex flex-col gap-1">
         <span className="text-xs font-semibold text-text-secondary">Quantidade</span>
-        <input type="number" step="any" min="0" {...register('quantity')} className="input" />
-        {errors.quantity && <span className="text-[11px] font-medium text-danger">{errors.quantity.message}</span>}
+        <input
+          type="number"
+          step="any"
+          min="0"
+          {...register('quantity')}
+          className="input"
+          aria-invalid={!!errors.quantity}
+          aria-describedby={errors.quantity ? 'quantity-error' : undefined}
+        />
+        {errors.quantity && (
+          <span id="quantity-error" className="text-[11px] font-medium text-danger">
+            {errors.quantity.message}
+          </span>
+        )}
       </label>
       {addLine.isError && <p className="mb-3 text-[11px] font-medium text-danger">{addLine.error.message}</p>}
       <Button type="submit" disabled={addLine.isPending} className="w-full">
@@ -184,9 +206,18 @@ function ApproveOrderForm({ orderId, disabled }: { orderId: string; disabled: bo
       <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
           <span className="text-xs font-semibold text-text-secondary">Parcelas</span>
-          <input type="number" min="1" {...register('installmentCount')} className="input" />
+          <input
+            type="number"
+            min="1"
+            {...register('installmentCount')}
+            className="input"
+            aria-invalid={!!errors.installmentCount}
+            aria-describedby={errors.installmentCount ? 'installmentCount-error' : undefined}
+          />
           {errors.installmentCount && (
-            <span className="text-[11px] font-medium text-danger">{errors.installmentCount.message}</span>
+            <span id="installmentCount-error" className="text-[11px] font-medium text-danger">
+              {errors.installmentCount.message}
+            </span>
           )}
         </label>
         <label className="flex flex-col gap-1">
@@ -196,9 +227,17 @@ function ApproveOrderForm({ orderId, disabled }: { orderId: string; disabled: bo
       </div>
       <label className="mb-3 flex flex-col gap-1">
         <span className="text-xs font-semibold text-text-secondary">Primeiro Vencimento</span>
-        <input type="date" {...register('firstDueDate')} className="input" />
+        <input
+          type="date"
+          {...register('firstDueDate')}
+          className="input"
+          aria-invalid={!!errors.firstDueDate}
+          aria-describedby={errors.firstDueDate ? 'firstDueDate-error' : undefined}
+        />
         {errors.firstDueDate && (
-          <span className="text-[11px] font-medium text-danger">{errors.firstDueDate.message}</span>
+          <span id="firstDueDate-error" className="text-[11px] font-medium text-danger">
+            {errors.firstDueDate.message}
+          </span>
         )}
       </label>
       {approveOrder.isError && (

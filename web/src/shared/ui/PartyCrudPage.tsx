@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import type { LucideIcon } from 'lucide-react'
 import { Plus } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { cloneElement, useState, type InputHTMLAttributes, type ReactElement } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import type { ApiError } from '@/shared/api/errors'
@@ -175,16 +175,16 @@ function PartyForm({
   return (
     <form onSubmit={onSubmit} className="mb-6 rounded border border-border bg-surface p-4">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label="Nome" error={errors.name?.message}>
+        <Field name="party-name" label="Nome" error={errors.name?.message}>
           <input {...register('name')} className="input" />
         </Field>
-        <Field label="CPF/CNPJ" error={errors.document?.message}>
+        <Field name="party-document" label="CPF/CNPJ" error={errors.document?.message}>
           <input {...register('document')} className="input font-mono" />
         </Field>
-        <Field label="E-mail" error={errors.email?.message}>
+        <Field name="party-email" label="E-mail" error={errors.email?.message}>
           <input {...register('email')} className="input" />
         </Field>
-        <Field label="Telefone" error={errors.phone?.message}>
+        <Field name="party-phone" label="Telefone" error={errors.phone?.message}>
           <input {...register('phone')} className="input" />
         </Field>
       </div>
@@ -203,12 +203,30 @@ function PartyForm({
   )
 }
 
-function Field({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
+function Field({
+  name,
+  label,
+  error,
+  children,
+}: {
+  name: string
+  label: string
+  error?: string
+  children: ReactElement<InputHTMLAttributes<HTMLInputElement>>
+}) {
+  const errorId = `${name}-error`
   return (
     <label className="flex flex-col gap-1">
       <span className="text-xs font-semibold text-text-secondary">{label}</span>
-      {children}
-      {error && <span className="text-[11px] font-medium text-danger">{error}</span>}
+      {cloneElement(children, {
+        'aria-invalid': !!error,
+        'aria-describedby': error ? errorId : undefined,
+      })}
+      {error && (
+        <span id={errorId} className="text-[11px] font-medium text-danger">
+          {error}
+        </span>
+      )}
     </label>
   )
 }

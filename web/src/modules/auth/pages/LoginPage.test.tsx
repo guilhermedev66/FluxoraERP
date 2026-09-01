@@ -40,4 +40,23 @@ describe('LoginPage', () => {
       expect(screen.getByRole('alert')).toHaveTextContent('Muitas tentativas em pouco tempo.')
     })
   })
+
+  it('marks an invalid field with aria-invalid and links it to its error via aria-describedby', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<LoginPage />)
+
+    await user.click(screen.getByRole('button', { name: 'Entrar' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('Informe um e-mail válido.')).toBeInTheDocument()
+    })
+
+    // exact: false — once the error span renders, it's a sibling inside the same <label> as the
+    // input, so the label's full text is "E-mail" + the error message, no longer an exact match.
+    const emailInput = screen.getByLabelText('E-mail', { exact: false })
+    expect(emailInput).toHaveAttribute('aria-invalid', 'true')
+    const describedBy = emailInput.getAttribute('aria-describedby')
+    expect(describedBy).toBeTruthy()
+    expect(document.getElementById(describedBy!)).toHaveTextContent('Informe um e-mail válido.')
+  })
 })
