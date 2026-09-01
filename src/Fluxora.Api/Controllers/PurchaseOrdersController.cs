@@ -61,6 +61,10 @@ public class PurchaseOrdersController(PurchaseOrderService purchaseOrderService)
         {
             return NotFound();
         }
+        catch (ConcurrencyConflictException ex)
+        {
+            return Conflict(new ProblemDetails { Title = ex.Message, Status = StatusCodes.Status409Conflict });
+        }
         catch (ArgumentException ex)
         {
             return ValidationProblem(ex.Message);
@@ -82,6 +86,10 @@ public class PurchaseOrdersController(PurchaseOrderService purchaseOrderService)
         {
             return NotFound();
         }
+        catch (ConcurrencyConflictException ex)
+        {
+            return Conflict(new ProblemDetails { Title = ex.Message, Status = StatusCodes.Status409Conflict });
+        }
         catch (ArgumentException ex)
         {
             return ValidationProblem(ex.Message);
@@ -102,6 +110,10 @@ public class PurchaseOrdersController(PurchaseOrderService purchaseOrderService)
         catch (NotFoundException)
         {
             return NotFound();
+        }
+        catch (ConcurrencyConflictException ex)
+        {
+            return Conflict(new ProblemDetails { Title = ex.Message, Status = StatusCodes.Status409Conflict });
         }
         catch (InvalidOperationException ex)
         {

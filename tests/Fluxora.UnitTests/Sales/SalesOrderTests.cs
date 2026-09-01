@@ -19,12 +19,14 @@ public class SalesOrderTests
     public void AddLine_ComputesTotalAcrossLines()
     {
         var order = SalesOrder.CreateDraft(Guid.NewGuid(), Guid.NewGuid());
+        var versionBefore = order.Version;
 
         order.AddLine(Guid.NewGuid(), "Widget", 2, 10.50m);
         order.AddLine(Guid.NewGuid(), "Gadget", 1, 5.00m);
 
         Assert.Equal(26.00m, order.Total);
         Assert.Equal(2, order.Lines.Count);
+        Assert.Equal(versionBefore + 2, order.Version);
     }
 
     [Fact]

@@ -41,6 +41,7 @@ public class PurchaseOrder : BaseEntity
         var line = new PurchaseOrderLine(Id, productId, productName, quantity, unitPrice);
         _lines.Add(line);
         Total += line.LineTotal;
+        Version++;
         return line;
     }
 

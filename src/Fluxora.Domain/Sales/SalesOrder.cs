@@ -41,6 +41,7 @@ public class SalesOrder : BaseEntity
         var line = new SalesOrderLine(Id, productId, productName, quantity, unitPrice);
         _lines.Add(line);
         Total += line.LineTotal;
+        Version++;
         return line;
     }
 

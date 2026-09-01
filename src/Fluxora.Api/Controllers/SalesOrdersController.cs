@@ -61,6 +61,10 @@ public class SalesOrdersController(SalesOrderService salesOrderService) : Contro
         {
             return NotFound();
         }
+        catch (ConcurrencyConflictException ex)
+        {
+            return Conflict(new ProblemDetails { Title = ex.Message, Status = StatusCodes.Status409Conflict });
+        }
         catch (ConflictException ex)
         {
             return Conflict(new ProblemDetails { Title = ex.Message, Status = StatusCodes.Status409Conflict });
@@ -86,6 +90,10 @@ public class SalesOrdersController(SalesOrderService salesOrderService) : Contro
         {
             return NotFound();
         }
+        catch (ConcurrencyConflictException ex)
+        {
+            return Conflict(new ProblemDetails { Title = ex.Message, Status = StatusCodes.Status409Conflict });
+        }
         catch (ArgumentException ex)
         {
             return ValidationProblem(ex.Message);
@@ -106,6 +114,10 @@ public class SalesOrdersController(SalesOrderService salesOrderService) : Contro
         catch (NotFoundException)
         {
             return NotFound();
+        }
+        catch (ConcurrencyConflictException ex)
+        {
+            return Conflict(new ProblemDetails { Title = ex.Message, Status = StatusCodes.Status409Conflict });
         }
         catch (InvalidOperationException ex)
         {
