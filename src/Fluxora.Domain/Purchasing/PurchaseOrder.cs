@@ -34,11 +34,16 @@ public class PurchaseOrder : BaseEntity
 
     public static PurchaseOrder CreateDraft(Guid supplierId, Guid createdByUserId) => new(supplierId, createdByUserId);
 
-    public PurchaseOrderLine AddLine(Guid productId, string productName, decimal quantity, decimal unitPrice)
+    public PurchaseOrderLine AddLine(
+        Guid productId,
+        string productName,
+        decimal quantity,
+        decimal unitPrice,
+        string? productCategory = null)
     {
         EnsureDraft("add a line to");
 
-        var line = new PurchaseOrderLine(Id, productId, productName, quantity, unitPrice);
+        var line = new PurchaseOrderLine(Id, productId, productName, quantity, unitPrice, productCategory);
         _lines.Add(line);
         Total += line.LineTotal;
         Version++;

@@ -38,7 +38,7 @@ public class PaymentService(
 
         var requestHash = RequestHasher.Hash(new { payableId, installmentId, Amount = amount, request.ExpectedVersion });
 
-        await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
+        await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken: cancellationToken);
         await idempotencyStore.AcquireLockAsync(Operation, idempotencyKey, cancellationToken);
 
         var existing = await idempotencyStore.FindAsync(Operation, idempotencyKey, cancellationToken);

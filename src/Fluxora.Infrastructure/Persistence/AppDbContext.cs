@@ -1,3 +1,4 @@
+using System.Data;
 using Fluxora.Application.Common;
 using Fluxora.Domain.Auditing;
 using Fluxora.Domain.Catalog;
@@ -80,9 +81,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     /// ConcurrencyConflictException, so every caller (any entity with an IsConcurrencyToken)
     /// gets the same 409 behavior without depending on EF Core types itself.
     /// </summary>
-    async Task<IUnitOfWorkTransaction> IUnitOfWork.BeginTransactionAsync(CancellationToken cancellationToken)
+    async Task<IUnitOfWorkTransaction> IUnitOfWork.BeginTransactionAsync(
+        IsolationLevel isolationLevel,
+        CancellationToken cancellationToken)
     {
-        var transaction = await Database.BeginTransactionAsync(cancellationToken);
+        var transaction = await Database.BeginTransactionAsync(isolationLevel, cancellationToken);
         return new EfUnitOfWorkTransaction(transaction);
     }
 

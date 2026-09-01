@@ -6,6 +6,8 @@ public sealed class BusinessClock(TimeProvider timeProvider, string timeZoneId) 
 {
     private readonly TimeZoneInfo _timeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
 
+    public string TimeZoneId => _timeZone.Id;
+
     public DateOnly Today => DateOnly.FromDateTime(
         TimeZoneInfo.ConvertTime(timeProvider.GetUtcNow(), _timeZone).DateTime);
 

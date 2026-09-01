@@ -64,7 +64,13 @@ Core, never computed by loading full entity graphs into memory. This required pe
 `SalesOrder.Total`/`PurchaseOrder.Total` (previously recomputed from `Lines` on every read -
 correct for a single order, unusable for a `SUM` across thousands of them). `ReportingRepository`
 is the only place report SQL lives; `ReportingService` just orchestrates and applies defaults
-(current month, today's date) - no business logic leaks into the API controller.
+(current business month through today when both bounds are omitted; one-sided ranges remain
+open-ended) and rejects inverted ranges - no business logic leaks into the API controller.
+Coupled multi-query reports run under PostgreSQL `REPEATABLE READ`, while current balance uses
+one conditional aggregate statement, so each response represents one coherent database snapshot.
+Purchase lines snapshot the product category used by historical expense reports. The introducing
+migration backfills existing lines from each product's category at migration time; category
+changes made before that migration cannot be reconstructed, while later edits cannot move history.
 
 ## Frontend architecture (Milestone 2+)
 

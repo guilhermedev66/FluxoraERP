@@ -1,8 +1,12 @@
+using System.Data;
+
 namespace Fluxora.Application.Common;
 
 public interface IUnitOfWork
 {
-    Task<IUnitOfWorkTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
+    Task<IUnitOfWorkTransaction> BeginTransactionAsync(
+        IsolationLevel isolationLevel = IsolationLevel.ReadCommitted,
+        CancellationToken cancellationToken = default);
 
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

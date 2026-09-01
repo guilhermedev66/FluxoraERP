@@ -58,7 +58,7 @@ public class PurchaseOrderService(
         var product = await productRepository.GetByIdAsync(request.ProductId, cancellationToken)
             ?? throw new NotFoundException("Product", request.ProductId);
 
-        order.AddLine(product.Id, product.Name, request.Quantity, request.UnitPrice);
+        order.AddLine(product.Id, product.Name, request.Quantity, request.UnitPrice, product.Category);
 
         auditWriter.Record("PurchaseOrderLineAdded", nameof(PurchaseOrder), order.Id, actorId: currentUser.UserId);
 

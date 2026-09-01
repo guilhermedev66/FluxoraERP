@@ -28,6 +28,18 @@ public class PurchaseOrderTests
     }
 
     [Fact]
+    public void AddLine_SnapshotsNormalizedProductCategory()
+    {
+        var order = PurchaseOrder.CreateDraft(Guid.NewGuid(), Guid.NewGuid());
+        var versionBefore = order.Version;
+
+        var line = order.AddLine(Guid.NewGuid(), "Raw Material", 1, 10m, "  Insumos  ");
+
+        Assert.Equal("Insumos", line.ProductCategory);
+        Assert.Equal(versionBefore + 1, order.Version);
+    }
+
+    [Fact]
     public void Confirm_Twice_ThrowsOnSecondCall()
     {
         var order = PurchaseOrder.CreateDraft(Guid.NewGuid(), Guid.NewGuid());

@@ -13,12 +13,17 @@ public class ReportingRepository(AppDbContext dbContext, IBusinessClock business
         DateOnly? from, DateOnly? to, CancellationToken cancellationToken = default)
     {
         var (fromUtc, toUtc) = ToRangeUtc(from, to);
+        var timeZoneId = businessClock.TimeZoneId;
 
         var rows = await dbContext.SalesOrders.AsNoTracking()
             .Where(o => o.Status == SalesOrderStatus.Approved && o.ApprovedAtUtc != null)
             .Where(o => fromUtc == null || o.ApprovedAtUtc >= fromUtc)
             .Where(o => toUtc == null || o.ApprovedAtUtc < toUtc)
-            .GroupBy(o => new { o.ApprovedAtUtc!.Value.Year, o.ApprovedAtUtc.Value.Month })
+            .GroupBy(o => new
+            {
+                TimeZoneInfo.ConvertTimeBySystemTimeZoneId(o.ApprovedAtUtc!.Value, timeZoneId).Year,
+                TimeZoneInfo.ConvertTimeBySystemTimeZoneId(o.ApprovedAtUtc.Value, timeZoneId).Month,
+            })
             .Select(g => new { g.Key.Year, g.Key.Month, Amount = g.Sum(o => o.Total) })
             .OrderBy(g => g.Year).ThenBy(g => g.Month)
             .ToListAsync(cancellationToken);
@@ -30,12 +35,17 @@ public class ReportingRepository(AppDbContext dbContext, IBusinessClock business
         DateOnly? from, DateOnly? to, CancellationToken cancellationToken = default)
     {
         var (fromUtc, toUtc) = ToRangeUtc(from, to);
+        var timeZoneId = businessClock.TimeZoneId;
 
         var rows = await dbContext.PurchaseOrders.AsNoTracking()
             .Where(o => o.Status == PurchaseOrderStatus.Confirmed && o.ConfirmedAtUtc != null)
             .Where(o => fromUtc == null || o.ConfirmedAtUtc >= fromUtc)
             .Where(o => toUtc == null || o.ConfirmedAtUtc < toUtc)
-            .GroupBy(o => new { o.ConfirmedAtUtc!.Value.Year, o.ConfirmedAtUtc.Value.Month })
+            .GroupBy(o => new
+            {
+                TimeZoneInfo.ConvertTimeBySystemTimeZoneId(o.ConfirmedAtUtc!.Value, timeZoneId).Year,
+                TimeZoneInfo.ConvertTimeBySystemTimeZoneId(o.ConfirmedAtUtc.Value, timeZoneId).Month,
+            })
             .Select(g => new { g.Key.Year, g.Key.Month, Amount = g.Sum(o => o.Total) })
             .OrderBy(g => g.Year).ThenBy(g => g.Month)
             .ToListAsync(cancellationToken);
@@ -99,6 +109,7 @@ public class ReportingRepository(AppDbContext dbContext, IBusinessClock business
         DateOnly? from, DateOnly? to, bool groupByDay, CancellationToken cancellationToken = default)
     {
         var (fromUtc, toUtc) = ToRangeUtc(from, to);
+        var timeZoneId = businessClock.TimeZoneId;
 
         var query = dbContext.CashMovements.AsNoTracking()
             .Where(c => fromUtc == null || c.OccurredAtUtc >= fromUtc)
@@ -109,7 +120,12 @@ public class ReportingRepository(AppDbContext dbContext, IBusinessClock business
         if (groupByDay)
         {
             var rows = await query
-                .GroupBy(c => new { c.OccurredAtUtc.Year, c.OccurredAtUtc.Month, c.OccurredAtUtc.Day })
+                .GroupBy(c => new
+                {
+                    TimeZoneInfo.ConvertTimeBySystemTimeZoneId(c.OccurredAtUtc, timeZoneId).Year,
+                    TimeZoneInfo.ConvertTimeBySystemTimeZoneId(c.OccurredAtUtc, timeZoneId).Month,
+                    TimeZoneInfo.ConvertTimeBySystemTimeZoneId(c.OccurredAtUtc, timeZoneId).Day,
+                })
                 .Select(g => new
                 {
                     g.Key.Year,
@@ -127,7 +143,11 @@ public class ReportingRepository(AppDbContext dbContext, IBusinessClock business
         else
         {
             var rows = await query
-                .GroupBy(c => new { c.OccurredAtUtc.Year, c.OccurredAtUtc.Month })
+                .GroupBy(c => new
+                {
+                    TimeZoneInfo.ConvertTimeBySystemTimeZoneId(c.OccurredAtUtc, timeZoneId).Year,
+                    TimeZoneInfo.ConvertTimeBySystemTimeZoneId(c.OccurredAtUtc, timeZoneId).Month,
+                })
                 .Select(g => new
                 {
                     g.Key.Year,
@@ -214,9 +234,8 @@ public class ReportingRepository(AppDbContext dbContext, IBusinessClock business
 
         var rows = await dbContext.PurchaseOrderLines.AsNoTracking()
             .Where(l => confirmedOrderIds.Contains(l.PurchaseOrderId))
-            .Join(dbContext.Products.AsNoTracking(), l => l.ProductId, p => p.Id, (l, p) => new { Line = l, Product = p })
-            .GroupBy(x => x.Product.Category ?? "Sem categoria")
-            .Select(g => new { Category = g.Key, Amount = g.Sum(x => x.Line.LineTotal) })
+            .GroupBy(l => l.ProductCategory ?? "Sem categoria")
+            .Select(g => new { Category = g.Key, Amount = g.Sum(l => l.LineTotal) })
             .OrderByDescending(g => g.Amount)
             .ToListAsync(cancellationToken);
 
@@ -225,15 +244,16 @@ public class ReportingRepository(AppDbContext dbContext, IBusinessClock business
 
     public async Task<decimal> GetCurrentBalanceAsync(CancellationToken cancellationToken = default)
     {
-        var inflow = await dbContext.CashMovements.AsNoTracking()
-            .Where(c => c.Direction == CashMovementDirection.Inflow)
-            .SumAsync(c => c.Amount, cancellationToken);
+        var totals = await dbContext.CashMovements.AsNoTracking()
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                Inflow = g.Where(c => c.Direction == CashMovementDirection.Inflow).Sum(c => c.Amount),
+                Outflow = g.Where(c => c.Direction == CashMovementDirection.Outflow).Sum(c => c.Amount),
+            })
+            .SingleOrDefaultAsync(cancellationToken);
 
-        var outflow = await dbContext.CashMovements.AsNoTracking()
-            .Where(c => c.Direction == CashMovementDirection.Outflow)
-            .SumAsync(c => c.Amount, cancellationToken);
-
-        return inflow - outflow;
+        return totals is null ? 0m : totals.Inflow - totals.Outflow;
     }
 
     private (DateTime? FromUtc, DateTime? ToUtc) ToRangeUtc(DateOnly? from, DateOnly? to) =>

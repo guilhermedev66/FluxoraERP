@@ -17,17 +17,17 @@ public class ReportsController(ReportingService reportingService) : ControllerBa
     [HttpGet("revenue")]
     public async Task<ActionResult<IReadOnlyList<PeriodAmountDto>>> Revenue(
         [FromQuery] DateOnly? from, [FromQuery] DateOnly? to, CancellationToken cancellationToken) =>
-        Ok(await reportingService.GetRevenueByMonthAsync(from, to, cancellationToken));
+        await ExecuteRangeQueryAsync(() => reportingService.GetRevenueByMonthAsync(from, to, cancellationToken));
 
     [HttpGet("expenses")]
     public async Task<ActionResult<IReadOnlyList<PeriodAmountDto>>> Expenses(
         [FromQuery] DateOnly? from, [FromQuery] DateOnly? to, CancellationToken cancellationToken) =>
-        Ok(await reportingService.GetExpensesByMonthAsync(from, to, cancellationToken));
+        await ExecuteRangeQueryAsync(() => reportingService.GetExpensesByMonthAsync(from, to, cancellationToken));
 
     [HttpGet("net-result")]
     public async Task<ActionResult<IReadOnlyList<NetResultDto>>> NetResult(
         [FromQuery] DateOnly? from, [FromQuery] DateOnly? to, CancellationToken cancellationToken) =>
-        Ok(await reportingService.GetNetResultByMonthAsync(from, to, cancellationToken));
+        await ExecuteRangeQueryAsync(() => reportingService.GetNetResultByMonthAsync(from, to, cancellationToken));
 
     [HttpGet("overdue")]
     public async Task<ActionResult<OverdueSummaryDto>> Overdue(CancellationToken cancellationToken) =>
@@ -42,7 +42,7 @@ public class ReportsController(ReportingService reportingService) : ControllerBa
     public async Task<ActionResult<IReadOnlyList<CashFlowPeriodDto>>> CashFlow(
         [FromQuery] DateOnly? from, [FromQuery] DateOnly? to, [FromQuery] bool groupByDay = false,
         CancellationToken cancellationToken = default) =>
-        Ok(await reportingService.GetCashFlowAsync(from, to, groupByDay, cancellationToken));
+        await ExecuteRangeQueryAsync(() => reportingService.GetCashFlowAsync(from, to, groupByDay, cancellationToken));
 
     [HttpGet("cash-flow-projected")]
     public async Task<ActionResult<IReadOnlyList<ProjectedCashFlowPeriodDto>>> CashFlowProjected(
@@ -53,14 +53,27 @@ public class ReportsController(ReportingService reportingService) : ControllerBa
     public async Task<ActionResult<IReadOnlyList<TopCustomerDto>>> TopCustomers(
         [FromQuery] DateOnly? from, [FromQuery] DateOnly? to, [FromQuery] int limit = 10,
         CancellationToken cancellationToken = default) =>
-        Ok(await reportingService.GetTopCustomersAsync(from, to, Math.Clamp(limit, 1, 100), cancellationToken));
+        await ExecuteRangeQueryAsync(() => reportingService.GetTopCustomersAsync(
+            from, to, Math.Clamp(limit, 1, 100), cancellationToken));
 
     [HttpGet("expenses-by-category")]
     public async Task<ActionResult<IReadOnlyList<CategoryExpenseDto>>> ExpensesByCategory(
         [FromQuery] DateOnly? from, [FromQuery] DateOnly? to, CancellationToken cancellationToken = default) =>
-        Ok(await reportingService.GetExpensesByCategoryAsync(from, to, cancellationToken));
+        await ExecuteRangeQueryAsync(() => reportingService.GetExpensesByCategoryAsync(from, to, cancellationToken));
 
     [HttpGet("dashboard-summary")]
     public async Task<ActionResult<DashboardSummaryDto>> DashboardSummary(CancellationToken cancellationToken) =>
         Ok(await reportingService.GetDashboardSummaryAsync(cancellationToken));
+
+    private async Task<ActionResult<T>> ExecuteRangeQueryAsync<T>(Func<Task<T>> query)
+    {
+        try
+        {
+            return Ok(await query());
+        }
+        catch (ArgumentException exception)
+        {
+            return ValidationProblem(exception.Message);
+        }
+    }
 }
