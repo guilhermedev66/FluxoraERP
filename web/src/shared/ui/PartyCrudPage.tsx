@@ -188,6 +188,9 @@ function PartyForm({
           <input {...register('phone')} className="input" />
         </Field>
       </div>
+      {createParty.isError && createParty.error.kind !== 'validation' && createParty.error.kind !== 'conflict' && (
+        <p className="mt-3 text-[11px] font-medium text-danger">{createParty.error.message}</p>
+      )}
       <div className="mt-4 flex justify-end gap-2">
         <Button type="button" variant="secondary" onClick={onDone}>
           Cancelar

@@ -167,6 +167,9 @@ function NewProductForm({ onDone }: { onDone: () => void }) {
           <input {...register('category')} className="input" />
         </label>
       </div>
+      {createProduct.isError && createProduct.error.kind !== 'validation' && createProduct.error.kind !== 'conflict' && (
+        <p className="mt-3 text-[11px] font-medium text-danger">{createProduct.error.message}</p>
+      )}
       <div className="mt-4 flex justify-end gap-2">
         <Button type="button" variant="secondary" onClick={onDone}>
           Cancelar

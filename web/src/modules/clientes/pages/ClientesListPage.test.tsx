@@ -1,4 +1,5 @@
 import { screen, waitFor } from '@testing-library/react'
+import { userEvent } from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { server } from '@/test/server'
@@ -30,6 +31,27 @@ describe('ClientesListPage', () => {
     server.use(http.get('*/api/customers', () => HttpResponse.json({ title: 'Erro no servidor.' }, { status: 500 })))
 
     renderWithProviders(<ClientesListPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Erro no servidor.')).toBeInTheDocument()
+    })
+  })
+
+  it('shows a fallback error banner when creating a cliente fails with a non-field error', async () => {
+    server.use(
+      http.get('*/api/customers', () => HttpResponse.json([])),
+      http.post('*/api/customers', () => HttpResponse.json({ title: 'Erro no servidor.' }, { status: 500 })),
+    )
+
+    const user = userEvent.setup()
+    renderWithProviders(<ClientesListPage />)
+
+    await waitFor(() => screen.getByText('Nenhum cliente encontrado'))
+    await user.click(screen.getAllByRole('button', { name: 'Novo Cliente' })[0])
+
+    await user.type(screen.getByRole('textbox', { name: 'Nome' }), 'Cliente Teste')
+    await user.type(screen.getByRole('textbox', { name: 'CPF/CNPJ' }), '12345678900')
+    await user.click(screen.getByRole('button', { name: 'Salvar Cliente' }))
 
     await waitFor(() => {
       expect(screen.getByText('Erro no servidor.')).toBeInTheDocument()

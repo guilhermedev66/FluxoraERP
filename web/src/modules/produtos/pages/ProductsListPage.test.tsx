@@ -1,4 +1,5 @@
 import { screen, waitFor } from '@testing-library/react'
+import { userEvent } from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { server } from '@/test/server'
@@ -45,6 +46,28 @@ describe('ProductsListPage', () => {
     server.use(http.get('*/api/products', () => HttpResponse.json({ title: 'Erro no servidor.' }, { status: 500 })))
 
     renderWithProviders(<ProductsListPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Erro no servidor.')).toBeInTheDocument()
+    })
+  })
+
+  it('shows a fallback error banner when creating a product fails with a non-field error', async () => {
+    server.use(
+      http.get('*/api/products', () => HttpResponse.json([])),
+      http.post('*/api/products', () => HttpResponse.json({ title: 'Erro no servidor.' }, { status: 500 })),
+    )
+
+    const user = userEvent.setup()
+    renderWithProviders(<ProductsListPage />)
+
+    await waitFor(() => screen.getByText('Nenhum produto encontrado'))
+    await user.click(screen.getAllByRole('button', { name: 'Novo Produto' })[0])
+
+    await user.type(screen.getByRole('textbox', { name: 'SKU' }), 'SKU-999')
+    await user.type(screen.getByRole('textbox', { name: 'Nome' }), 'Produto Teste')
+    await user.type(screen.getByRole('textbox', { name: 'Preço' }), '10')
+    await user.click(screen.getByRole('button', { name: 'Salvar Produto' }))
 
     await waitFor(() => {
       expect(screen.getByText('Erro no servidor.')).toBeInTheDocument()
