@@ -36,7 +36,11 @@ export function LoginPage() {
       await login(values.email, values.password)
     } catch (err) {
       const apiError = err as ApiError
-      setFormError(apiError.message)
+      // The backend deliberately collapses "wrong password" and "account locked out" into the
+      // same 401 (avoids a lockout oracle) with an English ProblemDetails title not meant for
+      // display — show our own pt-BR message instead of the generic "sessão expirada" default,
+      // which is nonsensical on a page the user hasn't logged into yet.
+      setFormError(apiError.kind === 'unauthorized' ? 'E-mail ou senha inválidos.' : apiError.message)
     }
   })
 
@@ -47,7 +51,7 @@ export function LoginPage() {
         <p className="mb-6 text-sm text-text-muted">Entre com sua conta para continuar.</p>
 
         {formError && (
-          <div className="mb-4 rounded border border-danger-border bg-danger-bg px-3 py-2 text-sm text-danger">
+          <div role="alert" className="mb-4 rounded border border-danger-border bg-danger-bg px-3 py-2 text-sm text-danger">
             {formError}
           </div>
         )}

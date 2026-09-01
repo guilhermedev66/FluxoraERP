@@ -52,12 +52,27 @@ function writeHeaders(options?: WriteOptions): HeadersInit | undefined {
   return options?.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : undefined
 }
 
+function parseRetryAfterSeconds(response: Response): number | undefined {
+  const header = response.headers.get('Retry-After')
+  if (!header) return undefined
+  // Retry-After is either a delay in seconds or an HTTP-date (RFC 9110 §10.2.3) — the backend's
+  // rate limiter sends the delay-seconds form, but a date is handled defensively too.
+  const seconds = Number(header)
+  if (Number.isFinite(seconds)) return Math.max(0, Math.round(seconds))
+  const dateMs = Date.parse(header)
+  return Number.isFinite(dateMs) ? Math.max(0, Math.round((dateMs - Date.now()) / 1000)) : undefined
+}
+
 async function unwrap<T>(promise: Promise<T>): Promise<T> {
   try {
     return await promise
   } catch (error) {
     if (error instanceof HTTPError) {
-      throw toApiError(error.response.status, error.data) satisfies ApiError
+      throw toApiError(
+        error.response.status,
+        error.data,
+        parseRetryAfterSeconds(error.response),
+      ) satisfies ApiError
     }
     throw networkError()
   }

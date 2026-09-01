@@ -1,4 +1,14 @@
-export type ApiErrorKind = 'validation' | 'conflict' | 'unauthorized' | 'forbidden' | 'not_found' | 'network' | 'server' | 'unknown'
+export type ApiErrorKind =
+  | 'validation'
+  | 'conflict'
+  | 'unauthorized'
+  | 'forbidden'
+  | 'not_found'
+  | 'locked'
+  | 'rate_limited'
+  | 'network'
+  | 'server'
+  | 'unknown'
 
 export interface ApiError {
   kind: ApiErrorKind
@@ -6,6 +16,8 @@ export interface ApiError {
   message: string
   /** Field name -> messages, from ASP.NET Core's ValidationProblemDetails.errors. */
   fieldErrors?: Record<string, string[]>
+  /** From the 429 response's Retry-After header (seconds), when the server sends one. */
+  retryAfterSeconds?: number
 }
 
 // Mirrors ASP.NET Core's ProblemDetails / ValidationProblemDetails response shape.
@@ -28,6 +40,10 @@ function kindForStatus(status: number): ApiErrorKind {
       return 'not_found'
     case 409:
       return 'conflict'
+    case 423:
+      return 'locked'
+    case 429:
+      return 'rate_limited'
     default:
       return status >= 500 ? 'server' : 'unknown'
   }
@@ -38,15 +54,16 @@ function kindForStatus(status: number): ApiErrorKind {
  * so `error.response.json()` throws by the time this runs (see ky's HTTPError docs). Read
  * the parsed body from `data`, never re-read `response` itself.
  */
-export function toApiError(status: number, data: unknown): ApiError {
+export function toApiError(status: number, data: unknown, retryAfterSeconds?: number): ApiError {
   const kind = kindForStatus(status)
   const body = (typeof data === 'object' && data !== null ? data : {}) as ProblemDetailsBody
 
   return {
     kind,
     status,
-    message: body.title ?? body.detail ?? defaultMessageFor(kind),
+    message: body.title ?? body.detail ?? defaultMessageFor(kind, retryAfterSeconds),
     fieldErrors: body.errors,
+    retryAfterSeconds,
   }
 }
 
@@ -54,7 +71,7 @@ export function networkError(): ApiError {
   return { kind: 'network', status: 0, message: 'Falha de conexão. Verifique sua internet e tente novamente.' }
 }
 
-function defaultMessageFor(kind: ApiErrorKind): string {
+function defaultMessageFor(kind: ApiErrorKind, retryAfterSeconds?: number): string {
   switch (kind) {
     case 'validation':
       return 'Alguns campos precisam de correção.'
@@ -66,6 +83,12 @@ function defaultMessageFor(kind: ApiErrorKind): string {
       return 'Você não tem permissão para esta ação.'
     case 'not_found':
       return 'Registro não encontrado.'
+    case 'locked':
+      return 'Conta bloqueada temporariamente após várias tentativas de login. Aguarde alguns minutos e tente novamente.'
+    case 'rate_limited':
+      return retryAfterSeconds
+        ? `Muitas tentativas em pouco tempo. Tente novamente em ${retryAfterSeconds}s.`
+        : 'Muitas tentativas em pouco tempo. Aguarde um instante e tente novamente.'
     case 'server':
       return 'Erro no servidor. Tente novamente em instantes.'
     default:
