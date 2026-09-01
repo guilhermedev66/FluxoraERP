@@ -47,3 +47,23 @@ jobs:
       - run: npm run lint
       - run: npm run test
       - run: npm run build
+
+  deployment-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      API_IMAGE: fluxora-api:ci
+      POSTGRES_PASSWORD: ci-deployment-smoke-only
+      JWT_KEY: ci-deployment-smoke-signing-key-at-least-32-characters
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build and start production-shaped Compose stack
+        run: docker compose up -d --build
+      - name: Verify liveness and PostgreSQL readiness
+        run: ./scripts/smoke-test.sh
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose logs --tail=200 api postgres
+      - name: Remove disposable stack
+        if: always()
+        run: docker compose down --volumes --remove-orphans

@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text;
 using System.Threading.RateLimiting;
 using Fluxora.Api.Auth;
@@ -7,6 +8,7 @@ using Fluxora.Infrastructure.Identity;
 using Fluxora.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -15,6 +17,23 @@ using Microsoft.AspNetCore.RateLimiting;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddInfrastructure(builder.Configuration);
+
+IPAddress? knownProxyAddress = null;
+var configuredKnownProxy = builder.Configuration["ReverseProxy:KnownProxy"];
+if (!string.IsNullOrWhiteSpace(configuredKnownProxy))
+{
+    if (!IPAddress.TryParse(configuredKnownProxy, out knownProxyAddress))
+    {
+        throw new InvalidOperationException("ReverseProxy:KnownProxy must be a valid IP address.");
+    }
+
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.ForwardLimit = 1;
+        options.KnownProxies.Add(knownProxyAddress);
+    });
+}
 
 builder.Services.AddOptions<JwtOptions>()
     .Bind(builder.Configuration.GetSection(JwtOptions.SectionName))
@@ -118,6 +137,11 @@ builder.Services.AddOpenApi(options =>
 });
 
 var app = builder.Build();
+
+if (knownProxyAddress is not null)
+{
+    app.UseForwardedHeaders();
+}
 
 if (app.Environment.IsDevelopment())
 {

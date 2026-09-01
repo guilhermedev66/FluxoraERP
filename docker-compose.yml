@@ -1,41 +1,64 @@
+x-default-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   postgres:
-    image: postgres:16-alpine
+    image: ${POSTGRES_IMAGE:-postgres:16-alpine}
+    restart: unless-stopped
+    init: true
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-fluxora}
       POSTGRES_USER: ${POSTGRES_USER:-fluxora}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_BIND_ADDRESS:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - fluxora_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fluxora}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fluxora} -d ${POSTGRES_DB:-fluxora}"]
       interval: 5s
       timeout: 5s
       retries: 10
+      start_period: 10s
+    logging: *default-logging
 
   api:
+    image: ${API_IMAGE:-fluxora-api:local}
     build:
       context: .
       dockerfile: src/Fluxora.Api/Dockerfile
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 1m
     depends_on:
       postgres:
         condition: service_healthy
     ports:
-      - "8080:8080"
+      - "${API_BIND_ADDRESS:-127.0.0.1}:${API_PORT:-8080}:8080"
     environment:
-      ConnectionStrings__Default: "Host=postgres;Database=${POSTGRES_DB:-fluxora};Username=${POSTGRES_USER:-fluxora};Password=${POSTGRES_PASSWORD}"
-      Jwt__Key: ${JWT_KEY}
+      ASPNETCORE_ENVIRONMENT: Production
+      AllowedHosts: "${ALLOWED_HOSTS:-localhost;127.0.0.1}"
+      Cors__AllowedOrigins__0: ${CORS_ALLOWED_ORIGIN:-http://localhost:5173}
+      ReverseProxy__KnownProxy: ${REVERSE_PROXY_KNOWN_PROXY:-}
+      ConnectionStrings__Default: "Host=postgres;Database=${POSTGRES_DB:-fluxora};Username=${POSTGRES_USER:-fluxora};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}"
+      Jwt__Key: ${JWT_KEY:?Set JWT_KEY in .env}
       Jwt__Issuer: ${JWT_ISSUER:-Fluxora}
       Jwt__Audience: ${JWT_AUDIENCE:-Fluxora}
       Jwt__ExpirationMinutes: ${JWT_EXPIRATION_MINUTES:-30}
-      Database__ApplyMigrations: "true"
+      Database__ApplyMigrations: "${DATABASE_APPLY_MIGRATIONS:-true}"
       Business__TimeZone: ${BUSINESS_TIME_ZONE:-America/Sao_Paulo}
       Automation__OverdueCron: "${AUTOMATION_OVERDUE_CRON:-0 5 0 * * ?}"
       Automation__DashboardSnapshotCron: "${AUTOMATION_DASHBOARD_SNAPSHOT_CRON:-0 15 0 * * ?}"
       Bootstrap__AdminEmail: ${BOOTSTRAP_ADMIN_EMAIL:-}
       Bootstrap__AdminPassword: ${BOOTSTRAP_ADMIN_PASSWORD:-}
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging: *default-logging
 
 volumes:
   fluxora_postgres_data:

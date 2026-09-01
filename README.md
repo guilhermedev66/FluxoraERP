@@ -142,11 +142,11 @@ A API sobe em `http://localhost:5xxx` (ver `src/Fluxora.Api/Properties/launchSet
 ### Tudo via Docker
 
 ```bash
-cp .env.example .env   # preencha com valores locais
+cp .env.example .env   # POSTGRES_PASSWORD e JWT_KEY são obrigatórios
 docker compose up --build
 ```
 
-API disponível em `http://localhost:8080`.
+API disponível em `http://localhost:8080`. O procedimento de host único, requisitos de TLS/segredos, migração, rollback e smoke test está em [`docs/deployment.md`](docs/deployment.md).
 
 ### Testes
 
