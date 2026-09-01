@@ -16,6 +16,8 @@ using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.WebHost.ConfigureKestrel(kestrelOptions => kestrelOptions.AddServerHeader = false);
+
 builder.Services.AddInfrastructure(builder.Configuration);
 
 IPAddress? knownProxyAddress = null;
@@ -84,6 +86,7 @@ if (allowedOrigins.Length > 0)
 }
 
 builder.Services.AddControllers();
+builder.Services.AddProblemDetails();
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<ILoginAttemptGuard, LoginAttemptGuard>();
 builder.Services.AddRateLimiter(options =>
@@ -139,6 +142,17 @@ builder.Services.AddOpenApi(options =>
 });
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
+
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    context.Response.Headers["Referrer-Policy"] = "no-referrer";
+    context.Response.Headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'";
+    await next();
+});
 
 if (knownProxyAddress is not null)
 {
