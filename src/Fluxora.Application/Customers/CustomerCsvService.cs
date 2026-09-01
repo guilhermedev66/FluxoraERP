@@ -212,8 +212,24 @@ public class CustomerCsvService(
     private static string Escape(string? value)
     {
         if (string.IsNullOrEmpty(value)) return string.Empty;
-        return value.IndexOfAny([',', '"', '\r', '\n']) >= 0
-            ? $"\"{value.Replace("\"", "\"\"")}\""
+
+        var safeValue = NeutralizeSpreadsheetFormula(value);
+        return safeValue.IndexOfAny([',', '"', '\r', '\n']) >= 0
+            ? $"\"{safeValue.Replace("\"", "\"\"")}\""
+            : safeValue;
+    }
+
+    private static string NeutralizeSpreadsheetFormula(string value)
+    {
+        var firstMeaningfulIndex = 0;
+        while (firstMeaningfulIndex < value.Length &&
+               (char.IsWhiteSpace(value[firstMeaningfulIndex]) || char.IsControl(value[firstMeaningfulIndex])))
+        {
+            firstMeaningfulIndex++;
+        }
+
+        return firstMeaningfulIndex < value.Length && value[firstMeaningfulIndex] is '=' or '+' or '-' or '@'
+            ? $"'{value}"
             : value;
     }
 

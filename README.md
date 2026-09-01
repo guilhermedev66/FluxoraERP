@@ -31,7 +31,7 @@ Projeto de portfólio para demonstrar regras de negócio reais, workflows corpor
 | Backend | C# · .NET 10 · ASP.NET Core Web API · Entity Framework Core · PostgreSQL · ASP.NET Core Identity (JWT + roles) · Quartz.NET |
 | Frontend | React · TypeScript · Vite · Tailwind (em progresso) |
 | Qualidade | xUnit · Testcontainers (PostgreSQL) |
-| Infra | Docker · GitHub Actions (CI, em progresso) |
+| Infra | Docker · GitHub Actions (CI) |
 
 ## Arquitetura
 
@@ -61,9 +61,9 @@ Regra de negócio vive no domínio (`Customer`, `Supplier`, `SalesOrder`, `Purch
 - ✅ **Milestone 3 — Finance**: pagamentos/recebimentos com idempotência, concorrência otimista e ledger de caixa, validados por revisão adversarial e testes paralelos reais
 - ✅ **Milestone 4 — Reporting & Dashboard**: 10 endpoints de relatório com agregações SQL e dashboard integrado
 - ✅ **Milestone 5 — Automation & Data Exchange**: Quartz persistente, processamento de vencidos, snapshots diários e CSV de clientes
-- ⏳ **Milestone 6 — Production Readiness**
+- ✅ **Milestone 6 — Production Readiness**: autorização por módulo, hardening de login/CSV, health checks, OpenAPI revisado e CI completa
 
-## Funcionalidades em progresso
+## Funcionalidades
 
 **Milestone 1 — Foundation**
 - [x] Autenticação JWT (`POST /api/auth/login`, `GET /api/auth/me`)
@@ -107,6 +107,14 @@ Regra de negócio vive no domínio (`Customer`, `Supplier`, `SalesOrder`, `Purch
 - [x] `GET /api/customers/export`: exportação filtrável de dados reais com escaping CSV e autorização `Admin`/`Manager`
 - [x] Policies explícitas para Financeiro, Relatórios, Automação e Data Exchange
 
+**Milestone 6 — Production Readiness**
+- [x] Policies explícitas por módulo: Vendas (`Admin`/`Manager`/`Sales`), Compras (`Admin`/`Manager`) e Financeiro (`Admin`/`Manager`/`Finance`), com testes positivos e negativos
+- [x] Proteção de login com lockout após 5 falhas por 15 minutos e rate limit por endereço de origem
+- [x] Exportação CSV neutraliza fórmulas de planilha em campos não confiáveis
+- [x] Health checks separados: liveness em `/health/live` e readiness do PostgreSQL em `/health/ready` (`/health` preservado como alias de readiness)
+- [x] OpenAPI com metadados, esquema Bearer JWT e requisitos de segurança por operação autenticada
+- [x] GitHub Actions executa restore/build, testes unitários e integração PostgreSQL, além de lint/test/build do frontend
+
 ## Como executar
 
 ### Pré-requisitos
@@ -129,7 +137,7 @@ export Business__TimeZone="America/Sao_Paulo"
 dotnet run --project src/Fluxora.Api
 ```
 
-A API sobe em `http://localhost:5xxx` (ver `src/Fluxora.Api/Properties/launchSettings.json`) com Swagger/OpenAPI em `/openapi/v1.json` no ambiente de desenvolvimento, e health check em `/health`.
+A API sobe em `http://localhost:5xxx` (ver `src/Fluxora.Api/Properties/launchSettings.json`) com OpenAPI em `/openapi/v1.json` no ambiente de desenvolvimento, liveness em `/health/live` e readiness em `/health/ready`.
 
 ### Tudo via Docker
 
@@ -147,7 +155,7 @@ dotnet test tests/Fluxora.UnitTests           # não precisa de Docker
 dotnet test tests/Fluxora.IntegrationTests    # precisa de Docker (Testcontainers)
 ```
 
-Atualmente são **69 testes unitários** e **43 testes de integração**. A suíte cobre autenticação/autorização, CRUD, geração transacional de títulos, parcelamento exato, idempotência sequencial e realmente concorrente, conflito de versão, ledger de caixa, relatórios SQL, datas de negócio, jobs repetidos, persistência do Quartz, importação CSV parcial/totalmente inválida/válida, exportação e auditoria. Os testes de integração executam a API real contra PostgreSQL via Testcontainers.
+Atualmente são **70 testes unitários** e **65 testes de integração**. A suíte cobre autenticação/autorização, lockout e rate limiting, IDOR entre agregados, CRUD, geração transacional de títulos, parcelamento exato, idempotência sequencial e realmente concorrente, conflitos de versão, ledger de caixa, snapshots consistentes de relatórios, datas de negócio, jobs repetidos, persistência do Quartz, importação CSV parcial/totalmente inválida/válida, exportação segura, health checks, OpenAPI e auditoria. Os testes de integração executam a API real contra PostgreSQL via Testcontainers.
 
 ## Licença
 

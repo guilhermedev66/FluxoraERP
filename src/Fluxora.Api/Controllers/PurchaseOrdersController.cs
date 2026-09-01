@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Fluxora.Api.Controllers;
 
 [ApiController]
-[Authorize]
+[Authorize(Policy = AppPolicies.PurchasingAccess)]
 [Route("api/purchase-orders")]
 public class PurchaseOrdersController(PurchaseOrderService purchaseOrderService) : ControllerBase
 {

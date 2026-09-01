@@ -170,6 +170,27 @@ public class PaymentApplicationTests(FluxoraApiFactory factory) : IClassFixture<
     }
 
     [Fact]
+    public async Task ApplyPayment_InstallmentFromDifferentPayable_ReturnsNotFoundWithoutMutation()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var routePayable = await CreatePayableWithOneInstallmentAsync(client, total: 100m);
+        var otherPayable = await CreatePayableWithOneInstallmentAsync(client, total: 200m);
+        var otherInstallment = otherPayable.Installments[0];
+
+        var response = await client.SendAsync(BuildPaymentRequest(
+            routePayable.Id,
+            otherInstallment.Id,
+            50m,
+            otherInstallment.Version,
+            $"wrong-parent-{Guid.NewGuid():N}"));
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        var refreshed = await (await client.GetAsync($"/api/payables/{otherPayable.Id}"))
+            .Content.ReadFromJsonAsync<PayableDto>();
+        Assert.Equal(0m, refreshed!.Installments.Single(i => i.Id == otherInstallment.Id).AmountPaid);
+    }
+
+    [Fact]
     public async Task ApplyPayment_ExceedingRemainingBalance_ReturnsConflict()
     {
         var client = await CreateAuthenticatedClientAsync();

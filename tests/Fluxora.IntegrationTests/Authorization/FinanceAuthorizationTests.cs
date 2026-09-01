@@ -50,6 +50,32 @@ public class FinanceAuthorizationTests(FluxoraApiFactory factory) : IClassFixtur
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
+    [Theory]
+    [InlineData(AppRoles.Finance, "/api/sales-orders")]
+    [InlineData(AppRoles.Finance, "/api/purchase-orders")]
+    [InlineData(AppRoles.Sales, "/api/purchase-orders")]
+    public async Task RoleWithoutModuleAccess_IsForbidden(string role, string path)
+    {
+        var client = await CreateClientForRoleAsync(role);
+
+        var response = await client.GetAsync(path);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData(AppRoles.Sales, "/api/sales-orders")]
+    [InlineData(AppRoles.Manager, "/api/sales-orders")]
+    [InlineData(AppRoles.Manager, "/api/purchase-orders")]
+    public async Task RoleWithModuleAccess_IsAllowed(string role, string path)
+    {
+        var client = await CreateClientForRoleAsync(role);
+
+        var response = await client.GetAsync(path);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
     private async Task<HttpClient> CreateClientForRoleAsync(string role)
     {
         var email = $"{role.ToLowerInvariant()}-{Guid.NewGuid():N}@fluxora.test";

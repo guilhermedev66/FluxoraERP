@@ -137,6 +137,27 @@ public class ReceiptApplicationTests(FluxoraApiFactory factory) : IClassFixture<
     }
 
     [Fact]
+    public async Task ApplyReceipt_InstallmentFromDifferentReceivable_ReturnsNotFoundWithoutMutation()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var routeReceivable = await CreateReceivableWithOneInstallmentAsync(client, total: 100m);
+        var otherReceivable = await CreateReceivableWithOneInstallmentAsync(client, total: 200m);
+        var otherInstallment = otherReceivable.Installments[0];
+
+        var response = await client.SendAsync(BuildReceiptRequest(
+            routeReceivable.Id,
+            otherInstallment.Id,
+            50m,
+            otherInstallment.Version,
+            $"wrong-parent-{Guid.NewGuid():N}"));
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        var refreshed = await (await client.GetAsync($"/api/receivables/{otherReceivable.Id}"))
+            .Content.ReadFromJsonAsync<ReceivableDto>();
+        Assert.Equal(0m, refreshed!.Installments.Single(i => i.Id == otherInstallment.Id).AmountPaid);
+    }
+
+    [Fact]
     public async Task ApplyReceipt_WithFractionalCent_ReturnsBadRequestWithoutChangingInstallment()
     {
         var client = await CreateAuthenticatedClientAsync();

@@ -13,4 +13,20 @@ public class HealthCheckTests(FluxoraApiFactory factory) : IClassFixture<Fluxora
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
+
+    [Fact]
+    public async Task Liveness_ReturnsOkWithoutDependencyChecks()
+    {
+        var response = await factory.CreateClient().GetAsync("/health/live");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Readiness_ReturnsOkWhenPostgresIsReachable()
+    {
+        var response = await factory.CreateClient().GetAsync("/health/ready");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
 }

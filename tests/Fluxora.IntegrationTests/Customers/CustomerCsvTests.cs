@@ -131,6 +131,23 @@ public class CustomerCsvTests(FluxoraApiFactory factory) : IClassFixture<Fluxora
         Assert.Contains(document, csv);
     }
 
+    [Fact]
+    public async Task Export_NeutralizesSpreadsheetFormulasIncludingLeadingControlCharacters()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var document = TestData.UniqueDocument();
+        var createResponse = await client.PostAsJsonAsync("/api/customers", new CreateCustomerRequest(
+            "=HYPERLINK(\"https://example.invalid\")", document, null, "\u0001+2+2"));
+        createResponse.EnsureSuccessStatusCode();
+
+        var response = await client.GetAsync($"/api/customers/export?search={document}");
+
+        response.EnsureSuccessStatusCode();
+        var csv = await response.Content.ReadAsStringAsync();
+        Assert.Contains("'=HYPERLINK", csv);
+        Assert.Contains("'\u0001+2+2", csv);
+    }
+
     private async Task<HttpClient> CreateAuthenticatedClientAsync()
     {
         var client = factory.CreateClient();

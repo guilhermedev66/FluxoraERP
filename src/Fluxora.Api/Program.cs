@@ -1,12 +1,16 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using Fluxora.Api.Auth;
 using Fluxora.Application.Common;
 using Fluxora.Infrastructure;
 using Fluxora.Infrastructure.Identity;
 using Fluxora.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
+using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,6 +40,10 @@ builder.Services
     });
 
 builder.Services.AddAuthorizationBuilder()
+    .AddPolicy(AppPolicies.SalesAccess, policy =>
+        policy.RequireRole(AppRoles.Admin, AppRoles.Manager, AppRoles.Sales))
+    .AddPolicy(AppPolicies.PurchasingAccess, policy =>
+        policy.RequireRole(AppRoles.Admin, AppRoles.Manager))
     .AddPolicy(AppPolicies.FinanceAccess, policy =>
         policy.RequireRole(AppRoles.Admin, AppRoles.Manager, AppRoles.Finance))
     .AddPolicy(AppPolicies.ReportingAccess, policy =>
@@ -57,8 +65,57 @@ if (allowedOrigins.Length > 0)
 }
 
 builder.Services.AddControllers();
-builder.Services.AddHealthChecks();
-builder.Services.AddOpenApi();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("login", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 20,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            AutoReplenishment = true,
+        }));
+});
+builder.Services.AddHealthChecks()
+    .AddCheck<Fluxora.Api.Health.DatabaseHealthCheck>("database", tags: ["ready"]);
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, _, _) =>
+    {
+        document.Info.Title = "Fluxora API";
+        document.Info.Version = "v1";
+        document.Info.Description = "Mini ERP API for commercial, purchasing, finance, reporting, and automation workflows.";
+        document.Components ??= new OpenApiComponents();
+        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+        document.Components.SecuritySchemes[JwtBearerDefaults.AuthenticationScheme] = new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            Description = "JWT access token returned by POST /api/auth/login.",
+        };
+        return Task.CompletedTask;
+    });
+    options.AddOperationTransformer((operation, context, _) =>
+    {
+        var requiresAuthorization = context.Description.ActionDescriptor.EndpointMetadata
+            .OfType<Microsoft.AspNetCore.Authorization.IAuthorizeData>()
+            .Any();
+        if (requiresAuthorization)
+        {
+            operation.Security ??= [];
+            operation.Security.Add(new OpenApiSecurityRequirement
+            {
+                [new OpenApiSecuritySchemeReference(JwtBearerDefaults.AuthenticationScheme, context.Document)] = [],
+            });
+        }
+
+        return Task.CompletedTask;
+    });
+});
 
 var app = builder.Build();
 
@@ -67,6 +124,8 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.UseRouting();
+
 if (allowedOrigins.Length > 0)
 {
     app.UseCors("Frontend");
@@ -74,8 +133,20 @@ if (allowedOrigins.Length > 0)
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false,
+});
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("ready"),
+});
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("ready"),
+});
 app.MapControllers();
 
 if (builder.Configuration.GetValue("Database:ApplyMigrations", defaultValue: false))

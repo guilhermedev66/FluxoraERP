@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
+using Quartz.Logging;
 using Testcontainers.PostgreSql;
 
 namespace Fluxora.IntegrationTests;
@@ -20,6 +22,10 @@ public class FluxoraApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // Quartz stores its logging provider process-wide. A previous test host may have disposed
+        // the factory it installed, so reset to the non-disposable null provider before startup.
+        LogContext.SetCurrentLogProvider(NullLoggerFactory.Instance);
+
         // Minimal-hosting entry points read configuration while Program is executing. UseSetting
         // makes these values available before AddInfrastructure consumes the connection string.
         builder.UseSetting("ConnectionStrings:Default", _container.GetConnectionString());
