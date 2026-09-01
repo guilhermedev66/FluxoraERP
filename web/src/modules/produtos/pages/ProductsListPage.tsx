@@ -10,6 +10,7 @@ import { EmptyState } from '@/shared/ui/EmptyState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { StatusBadge } from '@/shared/ui/StatusBadge'
 import { TableSkeleton } from '@/shared/ui/Skeleton'
+import { TruncationNotice } from '@/shared/ui/TruncationNotice'
 import { formatBRL } from '@/shared/lib/formatters'
 import { useCreateProduct, useProductsList } from '../api/queries'
 
@@ -109,6 +110,7 @@ export function ProductsListPage() {
           </table>
         </div>
       )}
+      {!isLoading && !isError && products && <TruncationNotice count={products.length} />}
     </div>
   )
 }

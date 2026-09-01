@@ -19,6 +19,14 @@ const mockProducts: ProductDto[] = [
   },
 ]
 
+function buildProducts(count: number): ProductDto[] {
+  return Array.from({ length: count }, (_, i) => ({
+    ...mockProducts[0],
+    id: `product-${i}`,
+    sku: `SKU-${i}`,
+  }))
+}
+
 describe('ProductsListPage', () => {
   it('renders products fetched from the API', async () => {
     server.use(http.get('*/api/products', () => HttpResponse.json(mockProducts)))
@@ -30,6 +38,16 @@ describe('ProductsListPage', () => {
     })
     expect(screen.getByText('SKU-001')).toBeInTheDocument()
     expect(screen.getByText('R$ 899,90')).toBeInTheDocument()
+  })
+
+  it('warns results may be truncated when the API returns a full page (backend caps at 25, no total count)', async () => {
+    server.use(http.get('*/api/products', () => HttpResponse.json(buildProducts(25))))
+
+    renderWithProviders(<ProductsListPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText(/Mostrando os primeiros 25 resultados/)).toBeInTheDocument()
+    })
   })
 
   it('shows an empty state when there are no products', async () => {

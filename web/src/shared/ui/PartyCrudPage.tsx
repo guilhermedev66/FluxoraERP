@@ -13,6 +13,7 @@ import { EmptyState } from './EmptyState'
 import { ErrorState } from './ErrorState'
 import { StatusBadge } from './StatusBadge'
 import { TableSkeleton } from './Skeleton'
+import { TruncationNotice } from './TruncationNotice'
 
 const partyFormSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório.'),
@@ -129,6 +130,7 @@ export function PartyCrudPage({ resource, title, subtitle, entityLabel, icon, cr
           </table>
         </div>
       )}
+      {!isLoading && !isError && parties && <TruncationNotice count={parties.length} />}
     </div>
   )
 }

@@ -11,6 +11,7 @@ import { EmptyState } from '@/shared/ui/EmptyState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { StatusBadge } from '@/shared/ui/StatusBadge'
 import { TableSkeleton } from '@/shared/ui/Skeleton'
+import { TruncationNotice } from '@/shared/ui/TruncationNotice'
 import { useCreateSalesOrder } from '../api/mutations'
 import { useSalesOrdersList } from '../api/queries'
 import type { SalesOrderDto } from '../api/types'
@@ -78,6 +79,7 @@ export function SalesOrdersListPage() {
           </table>
         </div>
       )}
+      {!isLoading && !isError && orders && <TruncationNotice count={orders.length} />}
     </div>
   )
 }
