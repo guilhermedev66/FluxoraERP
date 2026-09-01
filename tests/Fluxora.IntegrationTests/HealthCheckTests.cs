@@ -29,4 +29,14 @@ public class HealthCheckTests(FluxoraApiFactory factory) : IClassFixture<Fluxora
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
+
+    [Fact]
+    public async Task Readiness_ReportsHealthyQuartzSchedulerByName()
+    {
+        var response = await factory.CreateClient().GetAsync("/health/ready");
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("quartz", body, StringComparison.OrdinalIgnoreCase);
+    }
 }

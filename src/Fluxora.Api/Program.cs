@@ -104,7 +104,8 @@ builder.Services.AddRateLimiter(options =>
         }));
 });
 builder.Services.AddHealthChecks()
-    .AddCheck<Fluxora.Api.Health.DatabaseHealthCheck>("database", tags: ["ready"]);
+    .AddCheck<Fluxora.Api.Health.DatabaseHealthCheck>("database", tags: ["ready"])
+    .AddCheck<Fluxora.Api.Health.QuartzHealthCheck>("quartz", tags: ["ready"]);
 builder.Services.AddOpenApi(options =>
 {
     options.AddDocumentTransformer((document, _, _) =>
@@ -178,14 +179,17 @@ app.UseRateLimiter();
 app.MapHealthChecks("/health/live", new HealthCheckOptions
 {
     Predicate = _ => false,
+    ResponseWriter = Fluxora.Api.Health.HealthCheckJsonWriter.WriteAsync,
 });
 app.MapHealthChecks("/health/ready", new HealthCheckOptions
 {
     Predicate = registration => registration.Tags.Contains("ready"),
+    ResponseWriter = Fluxora.Api.Health.HealthCheckJsonWriter.WriteAsync,
 });
 app.MapHealthChecks("/health", new HealthCheckOptions
 {
     Predicate = registration => registration.Tags.Contains("ready"),
+    ResponseWriter = Fluxora.Api.Health.HealthCheckJsonWriter.WriteAsync,
 });
 app.MapControllers();
 

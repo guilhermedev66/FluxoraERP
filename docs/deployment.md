@@ -56,7 +56,7 @@ O script valida liveness, readiness real do PostgreSQL, login, identidade autent
 
 ## Operação e rollback
 
-- `/health/live` confirma que o processo HTTP responde; `/health/ready` inclui PostgreSQL e também alimenta o `HEALTHCHECK` da imagem.
+- `/health/live` confirma que o processo HTTP responde; `/health/ready` inclui PostgreSQL e o scheduler Quartz (jobs de vencidos e snapshot travados não passam), e também alimenta o `HEALTHCHECK` da imagem. Ambos retornam JSON com o status de cada check individual.
 - Os containers reiniciam com `unless-stopped`, aguardam até um minuto para encerramento limpo e rotacionam logs locais em três arquivos de 10 MB.
 - Para investigar uma falha de inicialização, use `docker compose logs --tail=200 api postgres` sem publicar o conteúdo caso possa conter dados operacionais.
 - Para rollback com imagens publicadas, restaure `API_IMAGE` para a tag anterior e execute `docker compose up -d --no-build api`. Reverter somente a imagem não reverte o schema; qualquer migração aplicada exige um plano de rollback revisado separadamente.
