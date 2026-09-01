@@ -109,11 +109,12 @@ Regra de negócio vive no domínio (`Customer`, `Supplier`, `SalesOrder`, `Purch
 
 **Milestone 6 — Production Readiness**
 - [x] Policies explícitas por módulo: Vendas (`Admin`/`Manager`/`Sales`), Compras (`Admin`/`Manager`) e Financeiro (`Admin`/`Manager`/`Finance`), com testes positivos e negativos
-- [x] Proteção de login com lockout após 5 falhas por 15 minutos e rate limit por endereço de origem
+- [x] Proteção de login com lockout após 5 falhas por 15 minutos, rate limit por endereço de origem e limite de alvos distintos por origem (mitiga lockout DoS direcionado a múltiplas contas)
 - [x] Exportação CSV neutraliza fórmulas de planilha em campos não confiáveis
+- [x] Importação de clientes serializa documentos concorrentes via lock transacional (import × import e import × criação avulsa não corrompem o resultado parcial)
 - [x] Health checks separados: liveness em `/health/live` e readiness do PostgreSQL em `/health/ready` (`/health` preservado como alias de readiness)
 - [x] OpenAPI com metadados, esquema Bearer JWT e requisitos de segurança por operação autenticada
-- [x] GitHub Actions executa restore/build, testes unitários e integração PostgreSQL, além de lint/test/build do frontend
+- [x] GitHub Actions executa restore/build, testes unitários e integração PostgreSQL, lint/test/build do frontend, e um job de deployment-smoke que sobe o Compose de produção e valida liveness/readiness/login/rota autenticada real
 
 ## Como executar
 

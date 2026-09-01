@@ -57,9 +57,20 @@ jobs:
       JWT_KEY: ci-deployment-smoke-signing-key-at-least-32-characters
     steps:
       - uses: actions/checkout@v7
+      - name: Generate disposable bootstrap/smoke credentials
+        run: |
+          set -euo pipefail
+          smoke_password="Ci-Smoke-$(openssl rand -hex 12)!"
+          echo "::add-mask::${smoke_password}"
+          {
+            echo "BOOTSTRAP_ADMIN_EMAIL=ci-smoke-admin@fluxora.ci"
+            echo "BOOTSTRAP_ADMIN_PASSWORD=${smoke_password}"
+            echo "FLUXORA_SMOKE_EMAIL=ci-smoke-admin@fluxora.ci"
+            echo "FLUXORA_SMOKE_PASSWORD=${smoke_password}"
+          } >> "$GITHUB_ENV"
       - name: Build and start production-shaped Compose stack
         run: docker compose up -d --build
-      - name: Verify liveness and PostgreSQL readiness
+      - name: Verify liveness, PostgreSQL readiness, and authenticated flow
         run: ./scripts/smoke-test.sh
       - name: Show container logs on failure
         if: failure()
