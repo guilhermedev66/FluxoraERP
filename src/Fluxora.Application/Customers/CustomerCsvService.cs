@@ -20,6 +20,7 @@ public sealed record CustomerCsvExport(byte[] Content, string FileName, string C
 public class CustomerCsvService(
     ICustomerRepository repository,
     IUnitOfWork unitOfWork,
+    ITransactionLock transactionLock,
     IAuditWriter auditWriter,
     ICurrentUser currentUser)
 {
@@ -30,8 +31,20 @@ public class CustomerCsvService(
     {
         var importId = Guid.NewGuid();
         var parsedRows = Parse(stream, out var parseErrors);
+        var uniqueDocuments = parsedRows
+            .Select(row => row.Document)
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+        await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken: cancellationToken);
+        foreach (var document in uniqueDocuments)
+        {
+            await transactionLock.AcquireAsync($"customer-document:{document}", cancellationToken);
+        }
+
         var existingDocuments = await repository.GetExistingDocumentsAsync(
-            parsedRows.Select(row => row.Document), cancellationToken);
+            uniqueDocuments, cancellationToken);
         var seenDocuments = new HashSet<string>(StringComparer.Ordinal);
         var errors = new List<CsvImportError>(parseErrors);
         var imported = 0;
@@ -72,6 +85,7 @@ public class CustomerCsvService(
             correlationId: importId);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         return new CustomerCsvImportResult(total, imported, errors.Count, errors.OrderBy(error => error.Line).ToList());
     }
 

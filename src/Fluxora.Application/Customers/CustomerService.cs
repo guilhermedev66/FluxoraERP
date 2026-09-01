@@ -7,6 +7,7 @@ namespace Fluxora.Application.Customers;
 public class CustomerService(
     ICustomerRepository repository,
     IUnitOfWork unitOfWork,
+    ITransactionLock transactionLock,
     IAuditWriter auditWriter,
     ICurrentUser currentUser)
 {
@@ -26,12 +27,15 @@ public class CustomerService(
 
     public async Task<CustomerDto> CreateAsync(CreateCustomerRequest request, CancellationToken cancellationToken = default)
     {
-        if (await repository.DocumentExistsAsync(request.Document, cancellationToken: cancellationToken))
+        var customer = Customer.Create(request.Name, request.Document, request.Email, request.Phone);
+        await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken: cancellationToken);
+        await transactionLock.AcquireAsync($"customer-document:{customer.Document}", cancellationToken);
+
+        if (await repository.DocumentExistsAsync(customer.Document, cancellationToken: cancellationToken))
         {
-            throw new ConflictException($"A customer with document '{request.Document}' already exists.");
+            throw new ConflictException($"A customer with document '{customer.Document}' already exists.");
         }
 
-        var customer = Customer.Create(request.Name, request.Document, request.Email, request.Phone);
         repository.Add(customer);
 
         auditWriter.Record(
@@ -42,6 +46,7 @@ public class CustomerService(
             actorId: currentUser.UserId);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         return ToDto(customer);
     }
 

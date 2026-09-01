@@ -4,15 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fluxora.Infrastructure.Idempotency;
 
-public class IdempotencyStore(AppDbContext dbContext) : IIdempotencyStore
+public class IdempotencyStore(AppDbContext dbContext, ITransactionLock transactionLock) : IIdempotencyStore
 {
-    public async Task AcquireLockAsync(string operation, string key, CancellationToken cancellationToken = default)
-    {
-        var lockKey = $"{operation}:{key}";
-        await dbContext.Database.ExecuteSqlInterpolatedAsync(
-            $"SELECT pg_advisory_xact_lock(hashtextextended({lockKey}, 0))",
-            cancellationToken);
-    }
+    public Task AcquireLockAsync(string operation, string key, CancellationToken cancellationToken = default) =>
+        transactionLock.AcquireAsync($"{operation}:{key}", cancellationToken);
 
     public async Task<IdempotentResponse?> FindAsync(string operation, string key, CancellationToken cancellationToken = default)
     {

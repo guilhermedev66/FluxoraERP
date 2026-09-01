@@ -44,6 +44,7 @@ public static class DependencyInjection
             .AddEntityFrameworkStores<AppDbContext>();
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
+        services.AddScoped<ITransactionLock, PostgresTransactionLock>();
         services.AddScoped<IAuditWriter, AuditWriter>();
 
         services.AddScoped<ICustomerRepository, CustomerRepository>();

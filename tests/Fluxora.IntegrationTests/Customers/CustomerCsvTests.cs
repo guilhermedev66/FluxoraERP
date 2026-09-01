@@ -87,6 +87,87 @@ public class CustomerCsvTests(FluxoraApiFactory factory) : IClassFixture<Fluxora
         Assert.Equal(2, result.Errors.Count);
     }
 
+    [Fact]
+    public async Task Import_ConcurrentFilesWithSameDocument_PreservePartialResultsAndAudits()
+    {
+        var firstClient = await CreateAuthenticatedClientAsync();
+        var secondClient = await CreateAuthenticatedClientAsync();
+        var sharedDocument = TestData.UniqueDocument();
+        var firstOnlyDocument = TestData.UniqueDocument();
+        var secondOnlyDocument = TestData.UniqueDocument();
+        var firstCsv = $"name,document,email,phone\nShared First,{sharedDocument},,\nFirst Only,{firstOnlyDocument},,\n";
+        var secondCsv = $"name,document,email,phone\nShared Second,{sharedDocument},,\nSecond Only,{secondOnlyDocument},,\n";
+        var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var firstTask = Task.Run(async () =>
+        {
+            await start.Task;
+            return await ImportAsync(firstClient, firstCsv);
+        });
+        var secondTask = Task.Run(async () =>
+        {
+            await start.Task;
+            return await ImportAsync(secondClient, secondCsv);
+        });
+
+        start.SetResult();
+        var responses = await Task.WhenAll(firstTask, secondTask);
+
+        Assert.All(responses, response => Assert.Equal(HttpStatusCode.OK, response.StatusCode));
+        var results = await Task.WhenAll(responses.Select(response =>
+            response.Content.ReadFromJsonAsync<CustomerCsvImportResult>()));
+        Assert.Equal(3, results.Sum(result => result!.Imported));
+        Assert.Equal(1, results.Sum(result => result!.Rejected));
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var documents = new[] { sharedDocument, firstOnlyDocument, secondOnlyDocument };
+        var customers = await dbContext.Customers.AsNoTracking()
+            .Where(customer => documents.Contains(customer.Document))
+            .ToListAsync();
+        Assert.Equal(3, customers.Count);
+        var sharedCustomer = Assert.Single(customers, customer => customer.Document == sharedDocument);
+        Assert.Equal(1, await dbContext.AuditEntries.CountAsync(entry =>
+            entry.Action == "CustomerImported" && entry.EntityId == sharedCustomer.Id));
+    }
+
+    [Fact]
+    public async Task Import_RacingCustomerCreate_ProducesOneCustomerWithoutServerError()
+    {
+        var importClient = await CreateAuthenticatedClientAsync();
+        var createClient = await CreateAuthenticatedClientAsync();
+        var document = TestData.UniqueDocument();
+        var csv = $"name,document,email,phone\nImported Customer,{document},,\n";
+        var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var importTask = Task.Run(async () =>
+        {
+            await start.Task;
+            return await ImportAsync(importClient, csv);
+        });
+        var createTask = Task.Run(async () =>
+        {
+            await start.Task;
+            return await createClient.PostAsJsonAsync("/api/customers", new CreateCustomerRequest(
+                "Created Customer", document, null, null));
+        });
+
+        start.SetResult();
+        await Task.WhenAll(importTask, createTask);
+        var importResponse = await importTask;
+        var createResponse = await createTask;
+        var importResult = await importResponse.Content.ReadFromJsonAsync<CustomerCsvImportResult>();
+
+        Assert.Equal(HttpStatusCode.OK, importResponse.StatusCode);
+        Assert.True(
+            (createResponse.StatusCode == HttpStatusCode.Created && importResult!.Imported == 0 && importResult.Rejected == 1) ||
+            (createResponse.StatusCode == HttpStatusCode.Conflict && importResult!.Imported == 1 && importResult.Rejected == 0));
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Assert.Equal(1, await dbContext.Customers.CountAsync(customer => customer.Document == document));
+    }
+
     [Theory]
     [InlineData("full_name,document,email,phone\nTest,DOC-1,,")]
     [InlineData("")]
