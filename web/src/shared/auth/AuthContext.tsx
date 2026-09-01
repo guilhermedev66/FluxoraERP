@@ -27,8 +27,14 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-function userFromToken(token: string): AuthUser {
+/** Returns null for a missing or already-expired token — a stale token left in sessionStorage
+ *  (e.g. the browser reopened after the session's exp claim passed) must not be treated as a
+ *  valid session; without this check the app would render protected UI until the first API call
+ *  happened to 401. */
+function userFromToken(token: string | null): AuthUser | null {
+  if (!token) return null
   const decoded = decodeToken(token)
+  if (decoded.expiresAtUtc && decoded.expiresAtUtc.getTime() <= Date.now()) return null
   return {
     id: decoded.userId,
     email: decoded.email,
@@ -38,17 +44,24 @@ function userFromToken(token: string): AuthUser {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    const token = getToken()
-    return token ? userFromToken(token) : null
-  })
+  const [user, setUser] = useState<AuthUser | null>(() => userFromToken(getToken()))
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     const unsubscribe = subscribeToken((token) => {
-      setUser(token ? userFromToken(token) : null)
+      setUser(userFromToken(token))
     })
     return unsubscribe
+  }, [])
+
+  // Housekeeping only (not what makes the initial render correct — userFromToken already
+  // treats an expired token as unauthenticated on first paint): drop a stale token from
+  // storage so it isn't silently reused later.
+  useEffect(() => {
+    const token = getToken()
+    if (token && !userFromToken(token)) {
+      setToken(null)
+    }
   }, [])
 
   useEffect(() => {
