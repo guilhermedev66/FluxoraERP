@@ -40,8 +40,8 @@ export function PartyCrudPage({ resource, title, subtitle, entityLabel, icon, cr
   const { data: parties, isLoading, isError, error, refetch } = resource.useList({ search })
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8">
-      <header className="mb-6 flex items-center justify-between">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-text-primary">{title}</h1>
           <p className="text-sm text-text-muted">{subtitle}</p>
@@ -105,10 +105,10 @@ export function PartyCrudPage({ resource, title, subtitle, entityLabel, icon, cr
           <table className="w-full text-left text-[13px]">
             <thead className="bg-surface-muted text-[11px] font-semibold uppercase tracking-wider text-text-muted">
               <tr>
-                <th className="px-3 py-2.5">Nome</th>
-                <th className="px-3 py-2.5 font-mono">Documento</th>
-                <th className="px-3 py-2.5">Contato</th>
-                <th className="w-[110px] px-3 py-2.5 text-right">Status</th>
+                <th scope="col" className="px-3 py-2.5">Nome</th>
+                <th scope="col" className="px-3 py-2.5 font-mono">Documento</th>
+                <th scope="col" className="px-3 py-2.5">Contato</th>
+                <th scope="col" className="w-[110px] px-3 py-2.5 text-right">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -174,7 +174,7 @@ function PartyForm({
 
   return (
     <form onSubmit={onSubmit} className="mb-6 rounded border border-border bg-surface p-4">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label="Nome" error={errors.name?.message}>
           <input {...register('name')} className="input" />
         </Field>

@@ -29,7 +29,7 @@ export function SalesOrdersListPage() {
 
   return (
     <div>
-      <header className="mb-6 flex items-center justify-between">
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-text-primary">Pedidos de Venda</h1>
           <p className="text-sm text-text-muted">Orçamentos e pedidos — Draft → Aprovado → Cancelado.</p>
@@ -64,10 +64,10 @@ export function SalesOrdersListPage() {
           <table className="w-full text-left text-[13px]">
             <thead className="bg-surface-muted text-[11px] font-semibold uppercase tracking-wider text-text-muted">
               <tr>
-                <th className="px-3 py-2.5">Cliente</th>
-                <th className="px-3 py-2.5 font-mono">Criado em</th>
-                <th className="px-3 py-2.5 text-right">Total</th>
-                <th className="w-[110px] px-3 py-2.5 text-right">Status</th>
+                <th scope="col" className="px-3 py-2.5">Cliente</th>
+                <th scope="col" className="px-3 py-2.5 font-mono">Criado em</th>
+                <th scope="col" className="px-3 py-2.5 text-right">Total</th>
+                <th scope="col" className="w-[110px] px-3 py-2.5 text-right">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -91,7 +91,7 @@ function SalesOrderRow({ order, customerName }: { order: SalesOrderDto; customer
       role="button"
       tabIndex={0}
       aria-label={`Ver pedido de ${customerName ?? order.customerId}`}
-      className="h-[42px] cursor-pointer border-t border-border outline-none hover:bg-surface-muted focus-visible:bg-surface-muted focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+      className="h-[42px] cursor-pointer border-t border-border hover:bg-surface-muted focus-visible:bg-surface-muted"
       onClick={openDetail}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {

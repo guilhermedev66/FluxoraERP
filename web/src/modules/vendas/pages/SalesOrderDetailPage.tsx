@@ -35,7 +35,7 @@ export function SalesOrderDetailPage() {
         Voltar para Pedidos
       </Link>
 
-      <header className="mb-6 flex items-center justify-between">
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="mb-1 flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-text-primary">{customerName}</h1>
@@ -53,10 +53,10 @@ export function SalesOrderDetailPage() {
         <table className="w-full text-left text-[13px]">
           <thead className="bg-surface-muted text-[11px] font-semibold uppercase tracking-wider text-text-muted">
             <tr>
-              <th className="px-3 py-2.5">Produto</th>
-              <th className="px-3 py-2.5 text-right">Qtd.</th>
-              <th className="px-3 py-2.5 text-right">Preço Unit.</th>
-              <th className="px-3 py-2.5 text-right">Total</th>
+              <th scope="col" className="px-3 py-2.5">Produto</th>
+              <th scope="col" className="px-3 py-2.5 text-right">Qtd.</th>
+              <th scope="col" className="px-3 py-2.5 text-right">Preço Unit.</th>
+              <th scope="col" className="px-3 py-2.5 text-right">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -88,7 +88,7 @@ export function SalesOrderDetailPage() {
       </div>
 
       {isDraft && (
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <AddLineForm orderId={order.id} />
           <ApproveOrderForm orderId={order.id} disabled={order.lines.length === 0} />
         </div>
@@ -181,7 +181,7 @@ function ApproveOrderForm({ orderId, disabled }: { orderId: string; disabled: bo
       <p className="mb-3 text-xs text-text-muted">
         Gera as parcelas de recebimento (Contas a Receber) no momento da aprovação.
       </p>
-      <div className="mb-3 grid grid-cols-2 gap-3">
+      <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
           <span className="text-xs font-semibold text-text-secondary">Parcelas</span>
           <input type="number" min="1" {...register('installmentCount')} className="input" />

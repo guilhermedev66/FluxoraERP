@@ -28,7 +28,7 @@ export function ProductsListPage() {
 
   return (
     <div>
-      <header className="mb-6 flex items-center justify-between">
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-text-primary">Produtos</h1>
           <p className="text-sm text-text-muted">Catálogo usado nos pedidos de venda e compra.</p>
@@ -83,11 +83,11 @@ export function ProductsListPage() {
           <table className="w-full text-left text-[13px]">
             <thead className="bg-surface-muted text-[11px] font-semibold uppercase tracking-wider text-text-muted">
               <tr>
-                <th className="px-3 py-2.5 font-mono">SKU</th>
-                <th className="px-3 py-2.5">Nome</th>
-                <th className="px-3 py-2.5">Categoria</th>
-                <th className="px-3 py-2.5 text-right">Preço</th>
-                <th className="w-[110px] px-3 py-2.5 text-right">Status</th>
+                <th scope="col" className="px-3 py-2.5 font-mono">SKU</th>
+                <th scope="col" className="px-3 py-2.5">Nome</th>
+                <th scope="col" className="px-3 py-2.5">Categoria</th>
+                <th scope="col" className="px-3 py-2.5 text-right">Preço</th>
+                <th scope="col" className="w-[110px] px-3 py-2.5 text-right">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -146,7 +146,7 @@ function NewProductForm({ onDone }: { onDone: () => void }) {
 
   return (
     <form onSubmit={onSubmit} className="mb-6 rounded border border-border bg-surface p-4">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
           <span className="text-xs font-semibold text-text-secondary">SKU</span>
           <input {...register('sku')} className="input font-mono" />

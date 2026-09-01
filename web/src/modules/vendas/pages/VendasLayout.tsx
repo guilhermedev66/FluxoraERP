@@ -8,7 +8,7 @@ const TABS = [
 
 export function VendasLayout() {
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
       <nav className="mb-6 flex gap-1 border-b border-border">
         {TABS.map((tab) => (
           <NavLink
