@@ -34,12 +34,14 @@ public class AuthController(
         var user = await userManager.FindByEmailAsync(request.Email);
         if (user is null || await userManager.IsLockedOutAsync(user))
         {
+            loginAttemptGuard.RecordFailedAttempt(sourceIp, request.Email);
             return Unauthorized(new ProblemDetails { Title = "Invalid credentials.", Status = StatusCodes.Status401Unauthorized });
         }
 
         if (!await userManager.CheckPasswordAsync(user, request.Password))
         {
             await userManager.AccessFailedAsync(user);
+            loginAttemptGuard.RecordFailedAttempt(sourceIp, request.Email);
             return Unauthorized(new ProblemDetails { Title = "Invalid credentials.", Status = StatusCodes.Status401Unauthorized });
         }
 
