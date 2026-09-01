@@ -10,7 +10,7 @@ export function AppShell() {
     <div className="flex h-screen bg-background">
       <Sidebar isMobileOpen={isMobileNavOpen} onClose={() => setIsMobileNavOpen(false)} />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Topbar onOpenMobileNav={() => setIsMobileNavOpen(true)} />
+        <Topbar isMobileNavOpen={isMobileNavOpen} onOpenMobileNav={() => setIsMobileNavOpen(true)} />
         <main className="flex-1 overflow-y-auto">
           <Outlet />
         </main>

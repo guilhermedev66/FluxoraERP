@@ -1,4 +1,5 @@
 import { X } from 'lucide-react'
+import { useEffect, useRef } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '@/shared/auth/AuthContext'
 import { cn } from '@/shared/lib/cn'
@@ -11,6 +12,21 @@ interface SidebarProps {
 
 export function Sidebar({ isMobileOpen, onClose }: SidebarProps) {
   const { hasRole } = useAuth()
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+
+  // Move focus into the drawer when it opens and let Escape close it, matching standard
+  // dismissible-overlay behavior — focus returning to the hamburger trigger on close lives
+  // in Topbar, since it owns that button.
+  useEffect(() => {
+    if (!isMobileOpen) return
+    closeButtonRef.current?.focus()
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isMobileOpen, onClose])
 
   return (
     <>
@@ -26,6 +42,7 @@ export function Sidebar({ isMobileOpen, onClose }: SidebarProps) {
         <div className="flex h-14 items-center justify-between border-b border-border px-4">
           <span className="text-sm font-bold tracking-tight text-text-primary">Fluxora ERP</span>
           <button
+            ref={closeButtonRef}
             onClick={onClose}
             aria-label="Fechar menu"
             className="flex h-8 w-8 items-center justify-center rounded text-text-muted hover:bg-surface-muted lg:hidden"

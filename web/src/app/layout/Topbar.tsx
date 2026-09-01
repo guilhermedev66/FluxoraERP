@@ -1,20 +1,33 @@
 import { LogOut, Menu, Moon, Sun } from 'lucide-react'
+import { useEffect, useRef } from 'react'
 import { useTheme } from '@/app/providers/ThemeProvider'
 import { useAuth } from '@/shared/auth/AuthContext'
 import { Button } from '@/shared/ui/Button'
 
 interface TopbarProps {
+  isMobileNavOpen: boolean
   onOpenMobileNav: () => void
 }
 
-export function Topbar({ onOpenMobileNav }: TopbarProps) {
+export function Topbar({ isMobileNavOpen, onOpenMobileNav }: TopbarProps) {
   const { user, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
+  const wasMobileNavOpen = useRef(isMobileNavOpen)
+
+  // Return focus to the trigger once the drawer closes (Sidebar moves focus into itself on open).
+  useEffect(() => {
+    if (wasMobileNavOpen.current && !isMobileNavOpen) {
+      menuButtonRef.current?.focus()
+    }
+    wasMobileNavOpen.current = isMobileNavOpen
+  }, [isMobileNavOpen])
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-surface px-4">
       <div>
         <button
+          ref={menuButtonRef}
           onClick={onOpenMobileNav}
           aria-label="Abrir menu"
           className="flex h-8 w-8 items-center justify-center rounded text-text-muted hover:bg-surface-muted lg:hidden"
