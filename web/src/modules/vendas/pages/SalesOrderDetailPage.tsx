@@ -21,7 +21,13 @@ export function SalesOrderDetailPage() {
   const { data: clientes } = clientesResource.useList({ pageSize: 100 })
 
   if (!id) return <Navigate to="/vendas" replace />
-  if (isLoading) return <CardSkeleton />
+  if (isLoading) {
+    return (
+      <div role="status" aria-label="Carregando pedido">
+        <CardSkeleton />
+      </div>
+    )
+  }
   if (isError) return <ErrorState message={error?.message} onRetry={() => refetch()} />
   if (!order) return null
 

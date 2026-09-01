@@ -76,7 +76,7 @@ export function Sidebar({ isMobileOpen, onClose }: SidebarProps) {
                         )
                       }
                     >
-                      <item.icon className="h-4 w-4" strokeWidth={1.5} />
+                      <item.icon className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
                       {item.label}
                     </NavLink>
                   ))}

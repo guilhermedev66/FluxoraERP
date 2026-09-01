@@ -31,7 +31,7 @@ export function KpiCard({ label, value, icon: Icon, delta, className }: KpiCardP
     <div className={cn('rounded border border-border bg-surface p-4', className)}>
       <div className="mb-2 flex items-center justify-between">
         <span className="text-xs font-medium uppercase tracking-wide text-text-muted">{label}</span>
-        {Icon && <Icon className="h-4 w-4 text-text-muted" strokeWidth={1.5} />}
+        {Icon && <Icon className="h-4 w-4 text-text-muted" strokeWidth={1.5} aria-hidden="true" />}
       </div>
       <div className="font-mono text-2xl font-bold tracking-tight text-text-primary tabular-nums">{value}</div>
       {delta && DeltaIcon && (
