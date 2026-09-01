@@ -47,7 +47,16 @@ export function ProductsListPage() {
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Buscar por nome ou SKU..."
           className="input h-9 w-72"
+          aria-label="Buscar por nome ou SKU"
         />
+      </div>
+
+      <div aria-live="polite" className="sr-only">
+        {!isLoading && !isError && products && (
+          search
+            ? `${products.length} produto${products.length === 1 ? '' : 's'} encontrado${products.length === 1 ? '' : 's'} para "${search}".`
+            : `${products.length} produto${products.length === 1 ? '' : 's'} no catálogo.`
+        )}
       </div>
 
       {isLoading && <TableSkeleton columns={4} />}
@@ -70,7 +79,7 @@ export function ProductsListPage() {
       )}
 
       {!isLoading && !isError && products && products.length > 0 && (
-        <div className="overflow-hidden rounded border border-border">
+        <div className="overflow-x-auto rounded border border-border">
           <table className="w-full text-left text-[13px]">
             <thead className="bg-surface-muted text-[11px] font-semibold uppercase tracking-wider text-text-muted">
               <tr>

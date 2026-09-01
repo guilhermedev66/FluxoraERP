@@ -60,7 +60,7 @@ export function SalesOrdersListPage() {
       )}
 
       {!isLoading && !isError && orders && orders.length > 0 && (
-        <div className="overflow-hidden rounded border border-border">
+        <div className="overflow-x-auto rounded border border-border">
           <table className="w-full text-left text-[13px]">
             <thead className="bg-surface-muted text-[11px] font-semibold uppercase tracking-wider text-text-muted">
               <tr>
@@ -84,10 +84,21 @@ export function SalesOrdersListPage() {
 
 function SalesOrderRow({ order, customerName }: { order: SalesOrderDto; customerName?: string }) {
   const navigate = useNavigate()
+  const openDetail = () => navigate(`/vendas/pedidos/${order.id}`)
+
   return (
     <tr
-      className="h-[42px] cursor-pointer border-t border-border hover:bg-surface-muted"
-      onClick={() => navigate(`/vendas/pedidos/${order.id}`)}
+      role="button"
+      tabIndex={0}
+      aria-label={`Ver pedido de ${customerName ?? order.customerId}`}
+      className="h-[42px] cursor-pointer border-t border-border outline-none hover:bg-surface-muted focus-visible:bg-surface-muted focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+      onClick={openDetail}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          openDetail()
+        }
+      }}
     >
       <td className="px-3 py-2 font-medium text-text-primary">{customerName ?? order.customerId}</td>
       <td className="px-3 py-2 font-mono text-xs text-text-muted">{formatDateBR(order.createdAtUtc)}</td>

@@ -64,7 +64,16 @@ export function PartyCrudPage({ resource, title, subtitle, entityLabel, icon, cr
           onChange={(event) => setSearch(event.target.value)}
           placeholder={`Buscar ${entityLabel.toLowerCase()} por nome ou documento...`}
           className="input h-9 w-72"
+          aria-label={`Buscar ${entityLabel.toLowerCase()} por nome ou documento`}
         />
+      </div>
+
+      <div aria-live="polite" className="sr-only">
+        {!isLoading && !isError && parties && (
+          search
+            ? `${parties.length} resultado${parties.length === 1 ? '' : 's'} para "${search}".`
+            : `${parties.length} registro${parties.length === 1 ? '' : 's'} de ${entityLabel.toLowerCase()}.`
+        )}
       </div>
 
       {isLoading && <TableSkeleton columns={5} />}
@@ -92,7 +101,7 @@ export function PartyCrudPage({ resource, title, subtitle, entityLabel, icon, cr
       )}
 
       {!isLoading && !isError && parties && parties.length > 0 && (
-        <div className="overflow-hidden rounded border border-border">
+        <div className="overflow-x-auto rounded border border-border">
           <table className="w-full text-left text-[13px]">
             <thead className="bg-surface-muted text-[11px] font-semibold uppercase tracking-wider text-text-muted">
               <tr>

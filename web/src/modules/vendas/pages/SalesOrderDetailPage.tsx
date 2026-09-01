@@ -49,7 +49,7 @@ export function SalesOrderDetailPage() {
         {isDraft && <CancelOrderButton orderId={order.id} />}
       </header>
 
-      <div className="mb-6 overflow-hidden rounded border border-border">
+      <div className="mb-6 overflow-x-auto rounded border border-border">
         <table className="w-full text-left text-[13px]">
           <thead className="bg-surface-muted text-[11px] font-semibold uppercase tracking-wider text-text-muted">
             <tr>
