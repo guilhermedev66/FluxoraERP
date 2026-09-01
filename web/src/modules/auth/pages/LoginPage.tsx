@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Navigate, useLocation, type Location } from 'react-router-dom'
 import { z } from 'zod'
 import type { ApiError } from '@/shared/api/errors'
 import { useAuth } from '@/shared/auth/AuthContext'
@@ -26,7 +26,10 @@ export function LoginPage() {
   } = useForm<LoginFormValues>({ resolver: zodResolver(loginSchema) })
 
   if (isAuthenticated) {
-    const from = (location.state as { from?: Location })?.from?.pathname ?? '/'
+    // Pass the whole location (not just pathname) so query params survive the redirect —
+    // a user bounced here from a filtered/paginated list (?search=..., ?page=...) gets
+    // that state back instead of landing on the bare route.
+    const from = (location.state as { from?: Location })?.from ?? { pathname: '/' }
     return <Navigate to={from} replace />
   }
 

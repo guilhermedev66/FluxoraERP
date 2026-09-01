@@ -1,10 +1,19 @@
-import { screen, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { render, screen, waitFor } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
-import { describe, expect, it } from 'vitest'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
+import { afterEach, describe, expect, it } from 'vitest'
+import { AuthProvider } from '@/shared/auth/AuthContext'
+import { RequireRole } from '@/shared/auth/RequireRole'
+import { ROLES } from '@/shared/auth/roles'
+import { setToken } from '@/shared/api/tokenStore'
+import { createFakeToken } from '@/test/fakeToken'
 import { server } from '@/test/server'
 import { renderWithProviders } from '@/test/renderWithProviders'
 import { LoginPage } from './LoginPage'
+
+afterEach(() => setToken(null))
 
 async function submit() {
   const user = userEvent.setup()
@@ -58,5 +67,58 @@ describe('LoginPage', () => {
     const describedBy = emailInput.getAttribute('aria-describedby')
     expect(describedBy).toBeTruthy()
     expect(document.getElementById(describedBy!)).toHaveTextContent('Informe um e-mail válido.')
+  })
+})
+
+function ProtectedMarker() {
+  const location = useLocation()
+  return <div>Conteúdo protegido em {location.pathname}{location.search}</div>
+}
+
+function renderAppFrom(initialPath: string) {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+  return render(
+    <MemoryRouter initialEntries={[initialPath]}>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route
+              path="/relatorios"
+              element={
+                <RequireRole roles={ROLES}>
+                  <ProtectedMarker />
+                </RequireRole>
+              }
+            />
+          </Routes>
+        </AuthProvider>
+      </QueryClientProvider>
+    </MemoryRouter>,
+  )
+}
+
+describe('LoginPage post-login redirect', () => {
+  it('preserves query params from the original route when redirecting back after login', async () => {
+    server.use(
+      http.post('*/api/auth/login', () =>
+        HttpResponse.json({
+          accessToken: createFakeToken(['Admin']),
+          expiresAtUtc: new Date(Date.now() + 3_600_000).toISOString(),
+        }),
+      ),
+    )
+
+    const user = userEvent.setup()
+    renderAppFrom('/relatorios?filtro=abc&pagina=2')
+
+    await waitFor(() => screen.getByRole('button', { name: 'Entrar' }))
+    await user.type(screen.getByLabelText('E-mail'), 'user@example.com')
+    await user.type(screen.getByLabelText('Senha'), 'senha-correta')
+    await user.click(screen.getByRole('button', { name: 'Entrar' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('Conteúdo protegido em /relatorios?filtro=abc&pagina=2')).toBeInTheDocument()
+    })
   })
 })
