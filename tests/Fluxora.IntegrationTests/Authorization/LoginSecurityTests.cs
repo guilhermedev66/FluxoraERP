@@ -66,3 +66,35 @@ public class LoginRateLimitTests(FluxoraApiFactory factory) : IClassFixture<Flux
         Assert.Equal(HttpStatusCode.TooManyRequests, statuses[^1]);
     }
 }
+
+public class LoginAttemptGuardTests(FluxoraApiFactory factory) : IClassFixture<FluxoraApiFactory>
+{
+    [Fact]
+    public async Task Login_TooManyDistinctTargetsFromOneAddress_ThrottlesFurtherTargetsRegardlessOfCredentials()
+    {
+        var client = factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N");
+
+        for (var i = 0; i < 5; i++)
+        {
+            var response = await client.PostAsJsonAsync(
+                "/api/auth/login",
+                new LoginRequest($"guard-{suffix}-{i}@fluxora.test", "Wrong!Password123"));
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        // A 6th distinct target from the same source is throttled even with the correct
+        // password for an account that genuinely exists - proves the guard runs before any
+        // credential check and cannot be used to distinguish real from fake accounts.
+        var sixthResponse = await client.PostAsJsonAsync(
+            "/api/auth/login",
+            new LoginRequest(FluxoraApiFactory.AdminEmail, FluxoraApiFactory.AdminPassword));
+        Assert.Equal(HttpStatusCode.TooManyRequests, sixthResponse.StatusCode);
+
+        // Repeating an already-seen target does not consume additional guard budget.
+        var repeatResponse = await client.PostAsJsonAsync(
+            "/api/auth/login",
+            new LoginRequest($"guard-{suffix}-0@fluxora.test", "Wrong!Password123"));
+        Assert.Equal(HttpStatusCode.Unauthorized, repeatResponse.StatusCode);
+    }
+}

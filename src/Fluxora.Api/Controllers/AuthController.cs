@@ -17,6 +17,7 @@ public sealed record LoginResponse(string AccessToken, DateTime ExpiresAtUtc);
 public class AuthController(
     UserManager<ApplicationUser> userManager,
     JwtTokenService tokenService,
+    ILoginAttemptGuard loginAttemptGuard,
     Microsoft.Extensions.Options.IOptions<JwtOptions> jwtOptions) : ControllerBase
 {
     [HttpPost("login")]
@@ -24,6 +25,12 @@ public class AuthController(
     [EnableRateLimiting("login")]
     public async Task<ActionResult<LoginResponse>> Login(LoginRequest request)
     {
+        var sourceIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        if (loginAttemptGuard.ShouldThrottle(sourceIp, request.Email))
+        {
+            return StatusCode(StatusCodes.Status429TooManyRequests);
+        }
+
         var user = await userManager.FindByEmailAsync(request.Email);
         if (user is null || await userManager.IsLockedOutAsync(user))
         {

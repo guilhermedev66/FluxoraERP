@@ -84,6 +84,8 @@ if (allowedOrigins.Length > 0)
 }
 
 builder.Services.AddControllers();
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<ILoginAttemptGuard, LoginAttemptGuard>();
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
