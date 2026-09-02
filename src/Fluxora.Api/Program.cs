@@ -87,7 +87,6 @@ if (allowedOrigins.Length > 0)
 
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
-builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<ILoginAttemptGuard, LoginAttemptGuard>();
 builder.Services.AddRateLimiter(options =>
 {
@@ -148,10 +147,20 @@ app.UseExceptionHandler();
 
 app.Use(async (context, next) =>
 {
-    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
-    context.Response.Headers["X-Frame-Options"] = "DENY";
-    context.Response.Headers["Referrer-Policy"] = "no-referrer";
-    context.Response.Headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'";
+    // Registered via OnStarting (fired immediately before headers are flushed) rather than set
+    // directly here: the built-in ExceptionHandlerMiddleware calls Response.Clear() - wiping any
+    // headers already set on the way in - before writing the ProblemDetails body for an unhandled
+    // exception. OnStarting callbacks are not part of that clear, so they still apply to the final
+    // response regardless of whether it came from a normal endpoint or the exception handler.
+    context.Response.OnStarting(static state =>
+    {
+        var response = (HttpResponse)state;
+        response.Headers["X-Content-Type-Options"] = "nosniff";
+        response.Headers["X-Frame-Options"] = "DENY";
+        response.Headers["Referrer-Policy"] = "no-referrer";
+        response.Headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'";
+        return Task.CompletedTask;
+    }, context.Response);
     await next();
 });
 
