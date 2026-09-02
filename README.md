@@ -51,7 +51,7 @@ tests/
   Fluxora.UnitTests
   Fluxora.IntegrationTests
 
-web/                       # frontend React (em progresso)
+web/                       # frontend React
 ```
 
 Regra de negócio vive no domínio (`Customer`, `Supplier`, `SalesOrder`, `PurchaseOrder`, `Receivable`, `Payable`), não em controllers.
@@ -120,6 +120,11 @@ Regra de negócio vive no domínio (`Customer`, `Supplier`, `SalesOrder`, `Purch
 - [x] Health checks separados: liveness em `/health/live` e readiness do PostgreSQL em `/health/ready` (`/health` preservado como alias de readiness)
 - [x] OpenAPI com metadados, esquema Bearer JWT e requisitos de segurança por operação autenticada
 - [x] GitHub Actions executa restore/build, testes unitários e integração PostgreSQL, lint/test/build do frontend, e um job de deployment-smoke que sobe o Compose de produção e valida liveness/readiness/login/rota autenticada real
+
+**Polish visual final (M6 Frontend)**
+- [x] Tema com três opções (Light/Dark/System) — não só um toggle binário: "System" acompanha `prefers-color-scheme` ao vivo, sem flash incorreto no primeiro paint, persistido, controle acessível (`radiogroup`/`aria-checked`/tooltip nativo)
+- [x] Dashboard ganhou um gráfico real (receita x despesa, 6 meses) além dos KPIs — cores vêm dos tokens `--chart-series-1/2` já reservados para isso, então acompanham Light/Dark automaticamente
+- [x] Favicon próprio (ver seção de Produção)
 
 ## Como executar
 
