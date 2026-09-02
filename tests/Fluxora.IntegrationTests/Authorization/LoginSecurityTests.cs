@@ -98,3 +98,44 @@ public class LoginAttemptGuardTests(FluxoraApiFactory factory) : IClassFixture<F
         Assert.Equal(HttpStatusCode.Unauthorized, repeatResponse.StatusCode);
     }
 }
+
+// Each of these gets its own FluxoraApiFactory instance (a fresh in-process rate limiter and
+// login-attempt-guard state), rather than sharing LoginAttemptGuardTests' fixture, so their request
+// volume can't collide with sibling tests against the shared 20-req/minute per-IP login rate limit.
+
+public class LoginAttemptGuardRaceTests(FluxoraApiFactory factory) : IClassFixture<FluxoraApiFactory>
+{
+    [Fact]
+    public async Task Login_ConcurrentDistinctTargetsFromOneAddress_StillCapsAtFiveDespiteRace()
+    {
+        var client = factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N");
+
+        // 10 distinct new targets fired concurrently from the same source: the cap check and the
+        // reservation of a slot must be atomic, or every request can observe room under the cap
+        // before any of them is recorded and all 10 would be admitted instead of only 5.
+        var responses = await Task.WhenAll(Enumerable.Range(0, 10).Select(i => client.PostAsJsonAsync(
+            "/api/auth/login",
+            new LoginRequest($"race-{suffix}-{i}@fluxora.test", "Wrong!Password123"))));
+
+        Assert.Equal(5, responses.Count(r => r.StatusCode == HttpStatusCode.Unauthorized));
+        Assert.Equal(5, responses.Count(r => r.StatusCode == HttpStatusCode.TooManyRequests));
+    }
+}
+
+public class LoginAttemptGuardSuccessReleaseTests(FluxoraApiFactory factory) : IClassFixture<FluxoraApiFactory>
+{
+    [Fact]
+    public async Task Login_ConcurrentSuccessfulLoginsFromOneAddress_AreNeverCountedAgainstTheCap()
+    {
+        var client = factory.CreateClient();
+
+        // Successes must release their provisional reservation: repeating the same real account
+        // concurrently many times must never itself trip the distinct-target cap.
+        var responses = await Task.WhenAll(Enumerable.Range(0, 10).Select(_ => client.PostAsJsonAsync(
+            "/api/auth/login",
+            new LoginRequest(FluxoraApiFactory.AdminEmail, FluxoraApiFactory.AdminPassword))));
+
+        Assert.All(responses, r => Assert.Equal(HttpStatusCode.OK, r.StatusCode));
+    }
+}

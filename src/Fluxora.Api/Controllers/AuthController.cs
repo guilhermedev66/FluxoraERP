@@ -26,7 +26,8 @@ public class AuthController(
     public async Task<ActionResult<LoginResponse>> Login(LoginRequest request)
     {
         var sourceIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        if (loginAttemptGuard.ShouldThrottle(sourceIp, request.Email))
+        var loginAttemptLease = loginAttemptGuard.Reserve(sourceIp, request.Email);
+        if (loginAttemptLease.Throttled)
         {
             return StatusCode(StatusCodes.Status429TooManyRequests);
         }
@@ -34,17 +35,18 @@ public class AuthController(
         var user = await userManager.FindByEmailAsync(request.Email);
         if (user is null || await userManager.IsLockedOutAsync(user))
         {
-            loginAttemptGuard.RecordFailedAttempt(sourceIp, request.Email);
+            loginAttemptLease.ConfirmFailure();
             return Unauthorized(new ProblemDetails { Title = "Invalid credentials.", Status = StatusCodes.Status401Unauthorized });
         }
 
         if (!await userManager.CheckPasswordAsync(user, request.Password))
         {
             await userManager.AccessFailedAsync(user);
-            loginAttemptGuard.RecordFailedAttempt(sourceIp, request.Email);
+            loginAttemptLease.ConfirmFailure();
             return Unauthorized(new ProblemDetails { Title = "Invalid credentials.", Status = StatusCodes.Status401Unauthorized });
         }
 
+        loginAttemptLease.Release();
         await userManager.ResetAccessFailedCountAsync(user);
 
         var roles = await userManager.GetRolesAsync(user);
