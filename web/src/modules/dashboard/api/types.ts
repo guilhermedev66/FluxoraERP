@@ -13,3 +13,11 @@ export interface DashboardSummaryDto {
   dueNext30DaysCount: number
   dueNext30DaysAmount: number
 }
+
+/** Mirrors Fluxora.Application.Reporting.NetResultDto. Period is "yyyy-MM". */
+export interface NetResultDto {
+  period: string
+  revenue: number
+  expenses: number
+  net: number
+}

@@ -3,6 +3,7 @@ import { formatBRL } from '@/shared/lib/formatters'
 import { CardSkeleton } from '@/shared/ui/Skeleton'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { KpiCard } from '@/shared/ui/KpiCard'
+import { NetResultChart } from '../components/NetResultChart'
 import { useDashboardSummary } from '../api/queries'
 
 function docLabel(count: number): string {
@@ -59,6 +60,10 @@ export function DashboardPage() {
               />
             </div>
           </section>
+
+          <div className="mb-6">
+            <NetResultChart />
+          </div>
 
           <section aria-labelledby="farol-heading">
             <h2 id="farol-heading" className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
