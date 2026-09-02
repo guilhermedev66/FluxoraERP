@@ -38,3 +38,5 @@ Thumbs.db
 
 # Local agent workspace
 .claude/
+.vercel
+.env*
