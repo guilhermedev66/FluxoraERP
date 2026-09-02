@@ -1,4 +1,4 @@
-# 🚧 Fluxora ERP — Em desenvolvimento
+# ✅ Fluxora ERP — Projeto Completo
 
 ERP full-stack enxuto para pequenas empresas, com foco em gestão comercial e financeira.
 
@@ -62,6 +62,8 @@ Regra de negócio vive no domínio (`Customer`, `Supplier`, `SalesOrder`, `Purch
 - ✅ **Milestone 4 — Reporting & Dashboard**: 10 endpoints de relatório com agregações SQL e dashboard integrado
 - ✅ **Milestone 5 — Automation & Data Exchange**: Quartz persistente, processamento de vencidos, snapshots diários e CSV de clientes
 - ✅ **Milestone 6 — Production Readiness**: autorização por módulo, hardening de login/CSV, health checks, OpenAPI revisado e CI completa
+
+**Status: projeto congelado / pronto para portfólio.** Todos os milestones concluídos, build backend e frontend limpos, suíte completa (unitários, integração PostgreSQL, frontend) e CI (backend, frontend, deployment-smoke) verdes no HEAD atual. Deploy real em produção depende de infraestrutura externa (domínio, TLS, secrets) não provisionada neste repositório — ver [`docs/deployment.md`](docs/deployment.md).
 
 ## Funcionalidades
 
