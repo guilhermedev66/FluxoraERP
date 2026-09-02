@@ -1,8 +1,8 @@
-import { LogOut, Menu, Moon, Sun } from 'lucide-react'
+import { LogOut, Menu } from 'lucide-react'
 import { useEffect, useRef } from 'react'
-import { useTheme } from '@/app/providers/ThemeProvider'
 import { useAuth } from '@/shared/auth/AuthContext'
 import { Button } from '@/shared/ui/Button'
+import { ThemeSwitcher } from '@/shared/ui/ThemeSwitcher'
 
 interface TopbarProps {
   isMobileNavOpen: boolean
@@ -11,7 +11,6 @@ interface TopbarProps {
 
 export function Topbar({ isMobileNavOpen, onOpenMobileNav }: TopbarProps) {
   const { user, logout } = useAuth()
-  const { theme, toggleTheme } = useTheme()
   const menuButtonRef = useRef<HTMLButtonElement>(null)
   const wasMobileNavOpen = useRef(isMobileNavOpen)
 
@@ -36,13 +35,7 @@ export function Topbar({ isMobileNavOpen, onOpenMobileNav }: TopbarProps) {
         </button>
       </div>
       <div className="flex items-center gap-3">
-        <button
-          onClick={toggleTheme}
-          aria-label="Alternar tema"
-          className="flex h-8 w-8 items-center justify-center rounded text-text-muted hover:bg-surface-muted"
-        >
-          {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-        </button>
+        <ThemeSwitcher />
         <span className="text-sm text-text-secondary">{user?.displayName ?? user?.email}</span>
         <Button variant="ghost" onClick={logout}>
           <LogOut className="h-4 w-4" />
